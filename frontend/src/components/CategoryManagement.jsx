@@ -1,6 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
-import { FaEye, FaEdit, FaTrash, FaPlus, FaChevronDown } from 'react-icons/fa';
+import { FaPlus } from 'react-icons/fa';
+import DynamicTable from './DynamicTable';
+import { servicesApi, partsApi } from '../api/catalogApi';
 
 const PageContainer = styled.div`
   margin-left: 280px;
@@ -104,126 +106,75 @@ const CreateBtn = styled.button`
   }
 `;
 
-const Table = styled.table`
-  width: 100%;
-  border-collapse: collapse;
-  background-color: white;
-  border-radius: 8px;
-  overflow: hidden;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-`;
-
-const TableHeader = styled.thead`
-  background-color: #f5f5f5;
-  border-bottom: 1px solid #e0e0e0;
-`;
-
-const TableHeaderCell = styled.th`
-  padding: 15px;
-  text-align: left;
-  font-weight: 600;
-  font-size: 13px;
-  color: #666;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-`;
-
-const TableBody = styled.tbody`
-  tr {
-    border-bottom: 1px solid #e0e0e0;
-    transition: background-color 0.2s ease;
-
-    &:hover {
-      background-color: #fafafa;
-    }
-  }
-`;
-
-const TableCell = styled.td`
-  padding: 15px;
+const LoadingMsg = styled.div`
+  text-align: center;
+  padding: 40px;
+  color: #999;
   font-size: 14px;
-  color: #333;
 `;
 
-const StatusBadge = styled.span`
-  display: inline-block;
-  padding: 4px 12px;
-  border-radius: 20px;
-  font-size: 12px;
-  font-weight: 600;
-  background-color: ${props => props.$status === 'active' ? '#e6f4ea' : '#fbe4e6'};
-  color: ${props => props.$status === 'active' ? '#0f8419' : '#c5192d'};
-`;
-
-const ActionButtons = styled.div`
-  display: flex;
-  gap: 10px;
-  justify-content: center;
-`;
-
-const ActionBtn = styled.button`
-  width: 32px;
-  height: 32px;
-  border: none;
-  background-color: #f0f0f0;
-  border-radius: 4px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #666;
-  transition: all 0.2s ease;
-
-  &:hover {
-    background-color: #e0e0e0;
-    color: #333;
-  }
-
-  &.delete:hover {
-    background-color: #ffebee;
-    color: #c5192d;
-  }
+const ErrorMsg = styled.div`
+  background-color: #ffebee;
+  border: 1px solid #ffcdd2;
+  color: #c5192d;
+  padding: 15px;
+  border-radius: 6px;
+  margin-bottom: 20px;
 `;
 
 const CategoryManagement = () => {
   const [activeTab, setActiveTab] = useState('services');
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('All Status');
+  const [services, setServices] = useState([]);
+  const [parts, setParts] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  // Mock data - replace with API calls
-  const serviceCategories = [
-    {
-      id: 1,
-      name: 'Oil Change',
-      description: 'Complete engine oil change service with filter replacement',
-      status: 'active',
-      createdDate: '2024-01-15',
-    },
-    {
-      id: 2,
-      name: 'Brake Service',
-      description: 'Brake inspection, pad replacement, and rotor servicing',
-      status: 'active',
-      createdDate: '2024-01-20',
-    },
-    {
-      id: 3,
-      name: 'Tire Rotation',
-      description: 'Professional tire rotation and balance service',
-      status: 'inactive',
-      createdDate: '2024-02-01',
-    },
-    {
-      id: 4,
-      name: 'Engine Diagnostics',
-      description: 'Comprehensive engine diagnostic testing and analysis',
-      status: 'active',
-      createdDate: '2024-02-10',
-    },
-  ];
+  // Fetch services on component mount
+  useEffect(() => {
+    loadServices();
+  }, []);
+
+  const loadServices = async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const data = await servicesApi.getAll();
+      setServices(data);
+    } catch (err) {
+      setError('Failed to load services. Please try again.');
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadParts = async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const data = await partsApi.getAll();
+      setParts(data);
+    } catch (err) {
+      setError('Failed to load parts. Please try again.');
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleTabChange = (tab) => {
+    setActiveTab(tab);
+    setSearchTerm('');
+    setStatusFilter('All Status');
+    if (tab === 'parts' && parts.length === 0) {
+      loadParts();
+    }
+  };
 
   const handleCreateNew = () => {
-    alert('Open create dialog for new service category');
+    alert(`Open create dialog for new ${activeTab === 'services' ? 'service' : 'part'}`);
   };
 
   const handleView = (id) => {
@@ -234,9 +185,60 @@ const CategoryManagement = () => {
     alert(`Edit item ${id}`);
   };
 
-  const handleDelete = (id) => {
-    alert(`Delete item ${id}`);
+  const handleDelete = async (id) => {
+    try {
+      if (activeTab === 'services') {
+        await servicesApi.delete(id);
+        loadServices();
+      } else {
+        await partsApi.delete(id);
+        loadParts();
+      }
+    } catch (err) {
+      setError('Failed to delete item. Please try again.');
+      console.error(err);
+    }
   };
+
+  // Filter data based on search and status
+  const getFilteredData = () => {
+    const data = activeTab === 'services' ? services : parts;
+    return data.filter(item => {
+      const matchesSearch = 
+        item.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        item.description?.toLowerCase().includes(searchTerm.toLowerCase());
+      
+      const matchesStatus = 
+        statusFilter === 'All Status' ||
+        (statusFilter === 'Active' && item.active) ||
+        (statusFilter === 'Inactive' && !item.active);
+      
+      return matchesSearch && matchesStatus;
+    });
+  };
+
+  // Column definitions for services
+  const serviceColumns = [
+    { key: 'code', label: 'Code', width: '120px' },
+    { key: 'name', label: 'Service Name', width: '200px' },
+    { key: 'description', label: 'Description', width: '300px' },
+    { key: 'price', label: 'Price', type: 'currency', width: '100px' },
+    { key: 'duration_minutes', label: 'Duration (min)', width: '120px' },
+    { key: 'active', label: 'Status', type: 'status', width: '100px' },
+    { key: 'createdAt', label: 'Created', type: 'date', width: '120px' },
+  ];
+
+  // Column definitions for parts
+  const partColumns = [
+    { key: 'sku', label: 'SKU', width: '120px' },
+    { key: 'name', label: 'Part Name', width: '250px' },
+    { key: 'unit_price', label: 'Unit Price', type: 'currency', width: '120px' },
+    { key: 'unit', label: 'Unit', width: '100px' },
+    { key: 'active', label: 'Status', type: 'status', width: '100px' },
+    { key: 'createdAt', label: 'Created', type: 'date', width: '120px' },
+  ];
+
+  const filteredData = getFilteredData();
 
   return (
     <PageContainer>
@@ -248,17 +250,19 @@ const CategoryManagement = () => {
       <TabsContainer>
         <Tab
           $active={activeTab === 'services'}
-          onClick={() => setActiveTab('services')}
+          onClick={() => handleTabChange('services')}
         >
           Service Categories
         </Tab>
         <Tab
           $active={activeTab === 'parts'}
-          onClick={() => setActiveTab('parts')}
+          onClick={() => handleTabChange('parts')}
         >
           Parts Categories
         </Tab>
       </TabsContainer>
+
+      {error && <ErrorMsg>{error}</ErrorMsg>}
 
       <ControlBar>
         <SearchInput
@@ -281,50 +285,18 @@ const CategoryManagement = () => {
         </CreateBtn>
       </ControlBar>
 
-      <Table>
-        <TableHeader>
-          <tr>
-            <TableHeaderCell>Service Name</TableHeaderCell>
-            <TableHeaderCell>Description</TableHeaderCell>
-            <TableHeaderCell>Status</TableHeaderCell>
-            <TableHeaderCell>Created Date</TableHeaderCell>
-            <TableHeaderCell>Actions</TableHeaderCell>
-          </tr>
-        </TableHeader>
-        <TableBody>
-          {serviceCategories.map((service) => (
-            <tr key={service.id}>
-              <TableCell>
-                <strong>{service.name}</strong>
-              </TableCell>
-              <TableCell>{service.description}</TableCell>
-              <TableCell>
-                <StatusBadge $status={service.status}>
-                  {service.status}
-                </StatusBadge>
-              </TableCell>
-              <TableCell>{service.createdDate}</TableCell>
-              <TableCell>
-                <ActionButtons>
-                  <ActionBtn onClick={() => handleView(service.id)} title="View">
-                    <FaEye />
-                  </ActionBtn>
-                  <ActionBtn onClick={() => handleEdit(service.id)} title="Edit">
-                    <FaEdit />
-                  </ActionBtn>
-                  <ActionBtn
-                    className="delete"
-                    onClick={() => handleDelete(service.id)}
-                    title="Delete"
-                  >
-                    <FaTrash />
-                  </ActionBtn>
-                </ActionButtons>
-              </TableCell>
-            </tr>
-          ))}
-        </TableBody>
-      </Table>
+      {loading ? (
+        <LoadingMsg>Loading...</LoadingMsg>
+      ) : (
+        <DynamicTable
+          columns={activeTab === 'services' ? serviceColumns : partColumns}
+          data={filteredData}
+          onView={handleView}
+          onEdit={handleEdit}
+          onDelete={handleDelete}
+          showActions={true}
+        />
+      )}
     </PageContainer>
   );
 };
