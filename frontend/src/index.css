@@ -1,0 +1,72 @@
+/* global.css */
+
+/* Reset margin và padding cho tất cả các phần tử */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* Thiết lập font chữ mặc định cho toàn bộ trang */
+body {
+  font-family: 'Arial', sans-serif;
+  font-size: 16px;
+  background-color: #c2cad4;
+  color: #333;
+  line-height: 1.5;
+}
+
+/* Đặt một số quy tắc cho các thẻ tiêu đề */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: 'Arial', sans-serif;
+  font-weight: bold;
+}
+
+/* Các liên kết */
+a {
+  color: #007bff;
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+/* Định dạng cho các danh sách */
+ul,
+ol {
+  list-style-position: inside;
+}
+
+/* Cải thiện giao diện form */
+input,
+button,
+select,
+textarea {
+  font-family: inherit;
+  font-size: inherit;
+  border: 1px solid #ccc;
+  padding: 8px;
+  border-radius: 4px;
+  outline: none;
+}
+
+input:focus,
+button:focus,
+select:focus,
+textarea:focus {
+  border-color: #007bff;
+}
+
+/* Thiết lập nền tối cho các header */
+header {
+  background-color: #333;
+  color: white;
+  padding: 10px 0;
+  text-align: center;
+}

@@ -1,0 +1,18 @@
+{
+  "development": {
+    "username": "postgres",
+    "password": "20226078",
+    "database": "auto_care",
+    "host": "localhost",
+    "dialect": "postgres",
+    "port": 5432
+  },
+  "production": {
+    "username": "postgres",
+    "password": "production_password",
+    "database": "production_db",
+    "host": "production_host",
+    "dialect": "postgres",
+    "port": 5432
+  }
+}
