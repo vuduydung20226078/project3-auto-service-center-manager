@@ -7,7 +7,8 @@ module.exports = (sequelize, DataTypes) => {
         password_hash: { type: DataTypes.TEXT, allowNull: false },
         full_name: { type: DataTypes.STRING(150), allowNull: true },
         phone: { type: DataTypes.STRING(30), allowNull: true },
-        email: { type: DataTypes.STRING(150), allowNull: false, unique: true }
+        email: { type: DataTypes.STRING(150), allowNull: false, unique: true },
+        status: { type: DataTypes.ENUM('active', 'disabled'), defaultValue: 'active', allowNull: false }
     }, {
         tableName: 'users',
         underscored: true,

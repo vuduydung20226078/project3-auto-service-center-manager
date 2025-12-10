@@ -1,6 +1,6 @@
 import React from 'react';
 import Auth from './pages/Auth';
-import AdminDashboard from './pages/AdminDashboard';
+import AdminDashboard from './pages/ManagementPage';
 import './App.css';
 import { Routes, Route, Navigate } from 'react-router-dom';
 

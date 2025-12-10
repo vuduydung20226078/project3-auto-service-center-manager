@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { FaPlus } from 'react-icons/fa';
 import DynamicTable from './DynamicTable';
+import ServiceFormModal from './ServiceFormModal';
+import PartFormModal from './PartFormModal';
 import { servicesApi, partsApi } from '../api/catalogApi';
 
 const PageContainer = styled.div`
@@ -32,7 +34,24 @@ const TabsContainer = styled.div`
   display: flex;
   gap: 0;
   border-bottom: 2px solid #e0e0e0;
-  margin-bottom: 30px;
+  margin-bottom: 0;
+`;
+
+const TabContentWrapper = styled.div`
+  border: 2px solid #e0e0e0;
+  border-radius: 0 0 12px 12px;
+  border-top: none;
+  padding: 30px;
+  background-color: white;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+`;
+
+const TabsOuterWrapper = styled.div`
+  border: 2px solid #e0e0e0;
+  border-radius: 12px 12px 0 0;
+  border-bottom: none;
+  background-color: white;
+  overflow: hidden;
 `;
 
 const Tab = styled.button`
@@ -122,6 +141,97 @@ const ErrorMsg = styled.div`
   margin-bottom: 20px;
 `;
 
+const SuccessMsg = styled.div`
+  background-color: #e8f5e9;
+  border: 1px solid #a5d6a7;
+  color: #2e7d32;
+  padding: 15px;
+  border-radius: 6px;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+`;
+
+const ConfirmOverlay = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+`;
+
+const ConfirmDialog = styled.div`
+  background: white;
+  border-radius: 8px;
+  width: 450px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+`;
+
+const ConfirmHeader = styled.div`
+  padding: 20px;
+  border-bottom: 1px solid #e0e0e0;
+`;
+
+const ConfirmTitle = styled.h3`
+  margin: 0;
+  font-size: 18px;
+  color: #333;
+`;
+
+const ConfirmBody = styled.div`
+  padding: 20px;
+  color: #666;
+  font-size: 14px;
+  line-height: 1.5;
+`;
+
+const ConfirmFooter = styled.div`
+  padding: 20px;
+  border-top: 1px solid #e0e0e0;
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+`;
+
+const ConfirmButton = styled.button`
+  padding: 10px 20px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  transition: all 0.3s ease;
+
+  &.cancel {
+    background-color: #f0f0f0;
+    color: #666;
+
+    &:hover {
+      background-color: #e0e0e0;
+    }
+  }
+
+  &.delete {
+    background-color: #d32f2f;
+    color: white;
+
+    &:hover {
+      background-color: #c62828;
+    }
+
+    &:disabled {
+      background-color: #ccc;
+      cursor: not-allowed;
+    }
+  }
+`;
+
 const CategoryManagement = () => {
   const [activeTab, setActiveTab] = useState('services');
   const [searchTerm, setSearchTerm] = useState('');
@@ -130,6 +240,15 @@ const CategoryManagement = () => {
   const [parts, setParts] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  
+  // Modal states
+  const [showServiceModal, setShowServiceModal] = useState(false);
+  const [showPartModal, setShowPartModal] = useState(false);
+  const [editingItem, setEditingItem] = useState(null);
+  const [modalMode, setModalMode] = useState('create');
+  const [successMessage, setSuccessMessage] = useState('');
+  const [deleteConfirm, setDeleteConfirm] = useState({ show: false, id: null, name: '' });
+  const [deleting, setDeleting] = useState(false);
 
   // Fetch services on component mount
   useEffect(() => {
@@ -170,33 +289,120 @@ const CategoryManagement = () => {
     setStatusFilter('All Status');
     if (tab === 'parts' && parts.length === 0) {
       loadParts();
+    } else {
+      setError('');
     }
   };
 
   const handleCreateNew = () => {
-    alert(`Open create dialog for new ${activeTab === 'services' ? 'service' : 'part'}`);
+    setEditingItem(null);
+    setModalMode('create');
+    if (activeTab === 'services') {
+      setShowServiceModal(true);
+    } else {
+      setShowPartModal(true);
+    }
   };
 
   const handleView = (id) => {
-    alert(`View details for item ${id}`);
+    const item = activeTab === 'services' 
+      ? services.find(s => s.id === id)
+      : parts.find(p => p.id === id);
+    
+    setEditingItem(item);
+    setModalMode('edit');
+    if (activeTab === 'services') {
+      setShowServiceModal(true);
+    } else {
+      setShowPartModal(true);
+    }
   };
 
   const handleEdit = (id) => {
-    alert(`Edit item ${id}`);
+    const item = activeTab === 'services' 
+      ? services.find(s => s.id === id)
+      : parts.find(p => p.id === id);
+    
+    setEditingItem(item);
+    setModalMode('edit');
+    if (activeTab === 'services') {
+      setShowServiceModal(true);
+    } else {
+      setShowPartModal(true);
+    }
   };
 
-  const handleDelete = async (id) => {
+  const handleDelete = (id) => {
+    const item = activeTab === 'services' 
+      ? services.find(s => s.id === id)
+      : parts.find(p => p.id === id);
+    
+    setDeleteConfirm({
+      show: true,
+      id: id,
+      name: item?.name || 'this item'
+    });
+  };
+
+  const confirmDelete = async () => {
+    setDeleting(true);
     try {
       if (activeTab === 'services') {
-        await servicesApi.delete(id);
+        await servicesApi.delete(deleteConfirm.id);
+        setSuccessMessage('Service deleted successfully!');
         loadServices();
       } else {
-        await partsApi.delete(id);
+        await partsApi.delete(deleteConfirm.id);
+        setSuccessMessage('Part deleted successfully!');
         loadParts();
       }
+      setTimeout(() => setSuccessMessage(''), 3000);
+      setDeleteConfirm({ show: false, id: null, name: '' });
     } catch (err) {
       setError('Failed to delete item. Please try again.');
       console.error(err);
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const cancelDelete = () => {
+    setDeleteConfirm({ show: false, id: null, name: '' });
+  };
+
+  const handleServiceSubmit = async (data) => {
+    try {
+      if (modalMode === 'create') {
+        await servicesApi.create(data);
+        setSuccessMessage('Service created successfully!');
+      } else {
+        await servicesApi.update(editingItem.id, data);
+        setSuccessMessage('Service updated successfully!');
+      }
+      loadServices();
+      setShowServiceModal(false);
+      setEditingItem(null);
+      setTimeout(() => setSuccessMessage(''), 3000);
+    } catch (err) {
+      throw err;
+    }
+  };
+
+  const handlePartSubmit = async (data) => {
+    try {
+      if (modalMode === 'create') {
+        await partsApi.create(data);
+        setSuccessMessage('Part created successfully!');
+      } else {
+        await partsApi.update(editingItem.id, data);
+        setSuccessMessage('Part updated successfully!');
+      }
+      loadParts();
+      setShowPartModal(false);
+      setEditingItem(null);
+      setTimeout(() => setSuccessMessage(''), 3000);
+    } catch (err) {
+      throw err;
     }
   };
 
@@ -247,24 +453,28 @@ const CategoryManagement = () => {
         <Subtitle>Manage service categories and parts inventory</Subtitle>
       </Header>
 
-      <TabsContainer>
-        <Tab
-          $active={activeTab === 'services'}
-          onClick={() => handleTabChange('services')}
-        >
-          Service Categories
-        </Tab>
-        <Tab
-          $active={activeTab === 'parts'}
-          onClick={() => handleTabChange('parts')}
-        >
-          Parts Categories
-        </Tab>
-      </TabsContainer>
+      <TabsOuterWrapper>
+        <TabsContainer>
+          <Tab
+            $active={activeTab === 'services'}
+            onClick={() => handleTabChange('services')}
+          >
+            Service Categories
+          </Tab>
+          <Tab
+            $active={activeTab === 'parts'}
+            onClick={() => handleTabChange('parts')}
+          >
+            Parts Categories
+          </Tab>
+        </TabsContainer>
+      </TabsOuterWrapper>
 
-      {error && <ErrorMsg>{error}</ErrorMsg>}
+      <TabContentWrapper>
+        {error && <ErrorMsg>{error}</ErrorMsg>}
+        {successMessage && <SuccessMsg>✓ {successMessage}</SuccessMsg>}
 
-      <ControlBar>
+        <ControlBar>
         <SearchInput
           type="text"
           placeholder="Search by name or description..."
@@ -296,6 +506,59 @@ const CategoryManagement = () => {
           onDelete={handleDelete}
           showActions={true}
         />
+      )}
+      </TabContentWrapper>
+
+      <ServiceFormModal
+        isOpen={showServiceModal}
+        onClose={() => {
+          setShowServiceModal(false);
+          setEditingItem(null);
+        }}
+        onSubmit={handleServiceSubmit}
+        initialData={editingItem}
+        mode={modalMode}
+      />
+
+      <PartFormModal
+        isOpen={showPartModal}
+        onClose={() => {
+          setShowPartModal(false);
+          setEditingItem(null);
+        }}
+        onSubmit={handlePartSubmit}
+        initialData={editingItem}
+        mode={modalMode}
+      />
+
+      {deleteConfirm.show && (
+        <ConfirmOverlay onClick={cancelDelete}>
+          <ConfirmDialog onClick={(e) => e.stopPropagation()}>
+            <ConfirmHeader>
+              <ConfirmTitle>Confirm Delete</ConfirmTitle>
+            </ConfirmHeader>
+            <ConfirmBody>
+              Are you sure you want to delete <strong>{deleteConfirm.name}</strong>? 
+              This action cannot be undone.
+            </ConfirmBody>
+            <ConfirmFooter>
+              <ConfirmButton 
+                className="cancel" 
+                onClick={cancelDelete}
+                disabled={deleting}
+              >
+                Cancel
+              </ConfirmButton>
+              <ConfirmButton 
+                className="delete" 
+                onClick={confirmDelete}
+                disabled={deleting}
+              >
+                {deleting ? 'Deleting...' : 'Delete'}
+              </ConfirmButton>
+            </ConfirmFooter>
+          </ConfirmDialog>
+        </ConfirmOverlay>
       )}
     </PageContainer>
   );

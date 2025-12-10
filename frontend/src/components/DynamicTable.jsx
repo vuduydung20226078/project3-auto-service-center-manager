@@ -65,18 +65,18 @@ const ActionBtn = styled.button`
   width: 32px;
   height: 32px;
   border: none;
-  background-color: #f0f0f0;
+  background-color: ${props => props.$bgColor || '#f0f0f0'};
   border-radius: 4px;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #666;
+  color: ${props => props.$color || '#666'};
   transition: all 0.2s ease;
 
   &:hover {
-    background-color: #e0e0e0;
-    color: #333;
+    background-color: ${props => props.$hoverBg || '#e0e0e0'};
+    color: ${props => props.$hoverColor || '#333'};
   }
 
   &.delete:hover {
@@ -90,6 +90,65 @@ const EmptyState = styled.div`
   padding: 40px;
   color: #999;
   font-size: 14px;
+`;
+
+const TableWrapper = styled.div`
+  width: 100%;
+`;
+
+const PaginationContainer = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  background-color: white;
+  border-top: 1px solid #e0e0e0;
+  border-radius: 0 0 8px 8px;
+`;
+
+const PaginationInfo = styled.div`
+  font-size: 14px;
+  color: #666;
+`;
+
+const PaginationButtons = styled.div`
+  display: flex;
+  gap: 8px;
+  align-items: center;
+`;
+
+const PageButton = styled.button`
+  padding: 8px 12px;
+  border: 1px solid #e0e0e0;
+  background-color: ${props => props.$active ? '#4c00b4' : 'white'};
+  color: ${props => props.$active ? 'white' : '#666'};
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s ease;
+
+  &:hover:not(:disabled) {
+    background-color: ${props => props.$active ? '#3c009d' : '#f5f5f5'};
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+`;
+
+const PageSizeSelect = styled.select`
+  padding: 8px 12px;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  font-size: 14px;
+  cursor: pointer;
+  background-color: white;
+  outline: none;
+
+  &:focus {
+    border-color: #4c00b4;
+  }
 `;
 
 /**
@@ -107,7 +166,10 @@ const EmptyState = styled.div`
  * @param {Function} onView - Callback when view button clicked
  * @param {Function} onEdit - Callback when edit button clicked
  * @param {Function} onDelete - Callback when delete button clicked
+ * @param {Function} customActions - Function that returns array of custom action buttons (row) => [{icon, label, onClick, color}]
  * @param {Boolean} showActions - Show action buttons (default: true)
+ * @param {Number} itemsPerPage - Number of items per page (default: 10)
+ * @param {Boolean} enablePagination - Enable pagination (default: true)
  * 
  * Example usage:
  * <DynamicTable
@@ -119,6 +181,8 @@ const EmptyState = styled.div`
  *   data={services}
  *   onEdit={handleEdit}
  *   onDelete={handleDelete}
+ *   customActions={(row) => [{icon: FaCustomIcon, label: 'Custom', onClick: () => {}, color: '#ff0000'}]}
+ *   itemsPerPage={15}
  * />
  */
 const DynamicTable = ({
@@ -127,8 +191,13 @@ const DynamicTable = ({
   onView,
   onEdit,
   onDelete,
+  customActions,
   showActions = true,
+  itemsPerPage = 10,
+  enablePagination = true,
 }) => {
+  const [currentPage, setCurrentPage] = React.useState(1);
+  const [pageSize, setPageSize] = React.useState(itemsPerPage);
   const handleActionClick = (action, id, e) => {
     e.preventDefault();
     e.stopPropagation();
@@ -164,7 +233,7 @@ const DynamicTable = ({
         return <StatusBadge $status={value}>{value ? 'active' : 'inactive'}</StatusBadge>;
       
       case 'number':
-        return typeof value === 'number' ? value.toFixed(2) : value;
+        return typeof value === 'number' ? (Number.isInteger(value) ? value : value.toFixed(2)) : value;
       
       case 'date':
         return new Date(value).toLocaleDateString();
@@ -181,8 +250,54 @@ const DynamicTable = ({
     return <EmptyState>No data available</EmptyState>;
   }
 
+  // Pagination calculations
+  const totalPages = Math.ceil(data.length / pageSize);
+  const startIndex = (currentPage - 1) * pageSize;
+  const endIndex = startIndex + pageSize;
+  const paginatedData = enablePagination ? data.slice(startIndex, endIndex) : data;
+
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
+  };
+
+  const handlePageSizeChange = (e) => {
+    setPageSize(Number(e.target.value));
+    setCurrentPage(1);
+  };
+
+  const getPageNumbers = () => {
+    const pages = [];
+    const maxVisiblePages = 5;
+    
+    if (totalPages <= maxVisiblePages) {
+      for (let i = 1; i <= totalPages; i++) {
+        pages.push(i);
+      }
+    } else {
+      if (currentPage <= 3) {
+        for (let i = 1; i <= 4; i++) pages.push(i);
+        pages.push('...');
+        pages.push(totalPages);
+      } else if (currentPage >= totalPages - 2) {
+        pages.push(1);
+        pages.push('...');
+        for (let i = totalPages - 3; i <= totalPages; i++) pages.push(i);
+      } else {
+        pages.push(1);
+        pages.push('...');
+        pages.push(currentPage - 1);
+        pages.push(currentPage);
+        pages.push(currentPage + 1);
+        pages.push('...');
+        pages.push(totalPages);
+      }
+    }
+    return pages;
+  };
+
   return (
-    <Table>
+    <TableWrapper>
+      <Table>
       <TableHeader>
         <tr>
           {columns.map((column) => (
@@ -194,7 +309,7 @@ const DynamicTable = ({
         </tr>
       </TableHeader>
       <TableBody>
-        {data.map((row) => (
+        {paginatedData.map((row) => (
           <tr key={row.id || Math.random()}>
             {columns.map((column) => (
               <TableCell key={column.key} style={{ width: column.width }}>
@@ -229,6 +344,24 @@ const DynamicTable = ({
                       <FaTrash />
                     </ActionBtn>
                   )}
+                  {customActions && customActions(row).map((action, idx) => {
+                    const Icon = action.icon;
+                    return (
+                      <ActionBtn
+                        key={idx}
+                        title={action.label}
+                        $color={action.color}
+                        $hoverColor={action.color}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          action.onClick(row);
+                        }}
+                      >
+                        <Icon />
+                      </ActionBtn>
+                    );
+                  })}
                 </ActionButtons>
               </TableCell>
             )}
@@ -236,6 +369,52 @@ const DynamicTable = ({
         ))}
       </TableBody>
     </Table>
+    
+    {enablePagination && data.length > 0 && (
+      <PaginationContainer>
+        <PaginationInfo>
+          Showing {startIndex + 1}-{Math.min(endIndex, data.length)} of {data.length} items
+        </PaginationInfo>
+        
+        <PaginationButtons>
+          <PageSizeSelect value={pageSize} onChange={handlePageSizeChange}>
+            <option value={5}>5 per page</option>
+            <option value={10}>10 per page</option>
+            <option value={20}>20 per page</option>
+            <option value={50}>50 per page</option>
+          </PageSizeSelect>
+          
+          <PageButton
+            onClick={() => handlePageChange(currentPage - 1)}
+            disabled={currentPage === 1}
+          >
+            Previous
+          </PageButton>
+          
+          {getPageNumbers().map((page, idx) => (
+            page === '...' ? (
+              <span key={`ellipsis-${idx}`} style={{ padding: '0 8px', color: '#999' }}>...</span>
+            ) : (
+              <PageButton
+                key={page}
+                $active={currentPage === page}
+                onClick={() => handlePageChange(page)}
+              >
+                {page}
+              </PageButton>
+            )
+          ))}
+          
+          <PageButton
+            onClick={() => handlePageChange(currentPage + 1)}
+            disabled={currentPage === totalPages}
+          >
+            Next
+          </PageButton>
+        </PaginationButtons>
+      </PaginationContainer>
+    )}
+    </TableWrapper>
   );
 };
 

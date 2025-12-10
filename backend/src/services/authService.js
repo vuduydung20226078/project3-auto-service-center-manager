@@ -20,7 +20,7 @@ exports.login = async (email, password) => {
     const token = jwt.sign(
         { id: user.id, role: user.Role.name }, // Payload: user.id và role
         process.env.JWT_SECRET,  // Mã bí mật
-        { expiresIn: '8h' }  // Thời gian hết hạn token
+        { expiresIn: '2h' }  // Thời gian hết hạn token
     );
 
     return { token, user: { id: user.id, email: user.email, role: user.Role.name } };

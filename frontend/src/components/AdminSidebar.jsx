@@ -140,6 +140,7 @@ const AdminSidebar = ({ activeMenu, onMenuClick, onLogout }) => {
   const menuItems = [
     { id: 'inventory', label: 'Inventory Management', icon: FaBox },
     { id: 'category', label: 'Category Management', icon: FaFolderOpen },
+    { id: 'users', label: 'User Management', icon: FaUsers },
     { id: 'appointment', label: 'Appointment Management', icon: FaCalendarAlt },
     { id: 'workorder', label: 'Work Order', icon: FaBox },
     { id: 'technician', label: 'Technician Assignment', icon: FaUsers },

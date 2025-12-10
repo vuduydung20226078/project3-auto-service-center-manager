@@ -3,7 +3,7 @@ require('dotenv').config(); // <- require this here
 // ...Any aditional configuration for sequelize-cli like custom folders for models and migrations
 const path = require('path');
 module.exports = {
-  'config': path.resolve('src', 'config', 'config.js'),
+  'config': path.resolve('src', 'config', 'config.json'),
   'models-path': path.resolve('src', 'models'),
   'seeders-path': path.resolve('src', 'seeders'),
   'migrations-path': path.resolve('src', 'migrations')

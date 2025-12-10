@@ -6,7 +6,8 @@ module.exports = (sequelize, DataTypes) => {
         qty: { type: DataTypes.INTEGER, allowNull: false },
         type: { type: DataTypes.ENUM('IN', 'OUT'), allowNull: false },
         ref: { type: DataTypes.STRING(200) },
-        created_by: { type: DataTypes.INTEGER }
+        created_by: { type: DataTypes.INTEGER },
+        created_at: { type: DataTypes.DATE, allowNull: false, defaultValue: DataTypes.NOW }
     }, {
         tableName: 'stock_entries',
         underscored: true,

@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import styled from 'styled-components';
 import AdminSidebar from '../components/AdminSidebar';
 import CategoryManagement from '../components/CategoryManagement';
+import UserManagement from '../components/UserManagement';
+import InventoryManagement from '../components/InventoryManagement';
 
 const AdminContainer = styled.div`
   display: flex;
@@ -25,8 +27,10 @@ const AdminDashboard = () => {
     switch (activeMenu) {
       case 'category':
         return <CategoryManagement />;
+      case 'users':
+        return <UserManagement />;
       case 'inventory':
-        return <div style={{ marginLeft: '280px', padding: '30px' }}>Inventory Management Coming Soon</div>;
+        return <InventoryManagement />;
       case 'appointment':
         return <div style={{ marginLeft: '280px', padding: '30px' }}>Appointment Management Coming Soon</div>;
       case 'workorder':
