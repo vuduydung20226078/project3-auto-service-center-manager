@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { FaPlus, FaBoxOpen, FaExclamationTriangle } from 'react-icons/fa';
-import DynamicTable from './DynamicTable';
-import { inventoryApi } from '../api/inventoryApi';
-import { partsApi } from '../api/catalogApi';
+import DynamicTable from '../Table/DynamicTable';
+import { inventoryApi } from '../../api/inventoryApi';
+import { partsApi } from '../../api/catalogApi';
 
 const PageContainer = styled.div`
   margin-left: 280px;
@@ -281,6 +281,7 @@ const InventoryManagement = () => {
   const [successMessage, setSuccessMessage] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState({ show: false, item: null });
   const [formData, setFormData] = useState({
     part_id: '',
     qty: '',
@@ -370,6 +371,33 @@ const InventoryManagement = () => {
     }
   };
 
+  const handleDeleteClick = (item) => {
+    if (item.qty > 0) {
+      setError(`Cannot delete "${item.Part?.name}" at ${item.location}. Quantity must be 0 before deletion.`);
+      setTimeout(() => setError(''), 5000);
+      return;
+    }
+    setDeleteConfirm({ show: true, item });
+  };
+
+  const handleDeleteConfirm = async () => {
+    const { item } = deleteConfirm;
+    setSubmitting(true);
+    setError('');
+
+    try {
+      await inventoryApi.deleteStock(item.part_id, item.location);
+      setSuccessMessage(`Stock record for "${item.Part?.name}" at ${item.location} deleted successfully!`);
+      setTimeout(() => setSuccessMessage(''), 3000);
+      setDeleteConfirm({ show: false, item: null });
+      loadData();
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to delete stock. Please try again.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const getFilteredInventory = () => {
     return inventory.filter(item => {
       const matchesSearch = 
@@ -445,6 +473,26 @@ const InventoryManagement = () => {
       type: 'date', 
       width: '120px' 
     },
+    {
+      key: 'actions',
+      label: 'Actions',
+      width: '100px',
+      render: (value, row) => (
+        row.qty === 0 ? (
+          <ActionBtn 
+            $bgColor="#c5192d" 
+            $hoverColor="#a01525"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleDeleteClick(row);
+            }}
+            style={{ padding: '6px 12px', fontSize: '12px' }}
+          >
+            Delete
+          </ActionBtn>
+        ) : null
+      )
+    }
   ];
 
   return (
@@ -646,6 +694,48 @@ const InventoryManagement = () => {
                 </Button>
               </ModalFooter>
             </form>
+          </Modal>
+        </ModalOverlay>
+      )}
+
+      {deleteConfirm.show && (
+        <ModalOverlay onClick={() => setDeleteConfirm({ show: false, item: null })}>
+          <Modal onClick={(e) => e.stopPropagation()} style={{ maxWidth: '450px' }}>
+            <ModalHeader>
+              <ModalTitle>Confirm Delete</ModalTitle>
+            </ModalHeader>
+            <ModalBody>
+              <p style={{ margin: '0 0 15px 0', fontSize: '14px', lineHeight: '1.6' }}>
+                Are you sure you want to delete this stock record?
+              </p>
+              <div style={{ background: '#f5f5f5', padding: '12px', borderRadius: '6px', fontSize: '13px' }}>
+                <strong>Part:</strong> {deleteConfirm.item?.Part?.name}<br/>
+                <strong>SKU:</strong> {deleteConfirm.item?.Part?.sku}<br/>
+                <strong>Location:</strong> {deleteConfirm.item?.location}<br/>
+                <strong>Quantity:</strong> <span style={{ color: '#c5192d', fontWeight: 600 }}>0</span>
+              </div>
+              <p style={{ margin: '15px 0 0 0', fontSize: '13px', color: '#666' }}>
+                This action cannot be undone.
+              </p>
+            </ModalBody>
+            <ModalFooter>
+              <Button 
+                type="button" 
+                className="secondary" 
+                onClick={() => setDeleteConfirm({ show: false, item: null })}
+                disabled={submitting}
+              >
+                Cancel
+              </Button>
+              <Button 
+                type="button" 
+                style={{ backgroundColor: '#c5192d' }}
+                onClick={handleDeleteConfirm}
+                disabled={submitting}
+              >
+                {submitting ? 'Deleting...' : 'Delete'}
+              </Button>
+            </ModalFooter>
           </Modal>
         </ModalOverlay>
       )}

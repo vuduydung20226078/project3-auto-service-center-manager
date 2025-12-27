@@ -6,7 +6,9 @@ import {
   FaCalendarAlt, 
   FaUsers, 
   FaCog,
-  FaSignOutAlt 
+  FaSignOutAlt,
+  FaTachometerAlt,
+  FaTools
 } from 'react-icons/fa';
 
 const SidebarContainer = styled.aside`
@@ -138,11 +140,12 @@ const LogoutBtn = styled.button`
 
 const AdminSidebar = ({ activeMenu, onMenuClick, onLogout }) => {
   const menuItems = [
+    { id: 'dashboard', label: 'Dashboard', icon: FaTachometerAlt },
     { id: 'inventory', label: 'Inventory Management', icon: FaBox },
     { id: 'category', label: 'Category Management', icon: FaFolderOpen },
     { id: 'users', label: 'User Management', icon: FaUsers },
     { id: 'appointment', label: 'Appointment Management', icon: FaCalendarAlt },
-    { id: 'workorder', label: 'Work Order', icon: FaBox },
+    { id: 'workorder', label: 'Work Order', icon: FaTools },
     { id: 'technician', label: 'Technician Assignment', icon: FaUsers },
     { id: 'control', label: 'Control Panel', icon: FaCog },
   ];

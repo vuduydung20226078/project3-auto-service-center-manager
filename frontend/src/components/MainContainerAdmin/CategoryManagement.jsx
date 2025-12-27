@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { FaPlus } from 'react-icons/fa';
-import DynamicTable from './DynamicTable';
-import ServiceFormModal from './ServiceFormModal';
-import PartFormModal from './PartFormModal';
-import { servicesApi, partsApi } from '../api/catalogApi';
+import DynamicTable from '../Table/DynamicTable';
+import ServiceFormModal from '../Form/ServiceFormModal';
+import PartFormModal from '../Form/PartFormModal';
+import { servicesApi, partsApi } from '../../api/catalogApi';
 
 const PageContainer = styled.div`
   margin-left: 280px;

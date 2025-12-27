@@ -1,6 +1,9 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import styled from "styled-components";
 import {FaKey, FaEnvelope, FaUser, FaTimes} from "react-icons/fa";
+import { login as apiLogin } from "../../api/auth";
+import { useAuth } from "../../contexts/AuthContext";
 
 import axios from "axios";
 const Base_URL = "http://localhost:3000/api";
@@ -124,6 +127,8 @@ const SuccessNotification = styled.div`
 `;
 
 const LoginSignup = () => {
+  const navigate = useNavigate();
+  const { login: setAuthLogin } = useAuth();
   const [action, setAction] = useState("Login");
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
@@ -157,14 +162,19 @@ const LoginSignup = () => {
     setError("");
     setEmailError("");
     try {
-      const response = await axios.post(`${Base_URL}/auth/login`, { email, password });
-      localStorage.setItem("token", response.data.token);
-      // Redirect to admin dashboard after successful login
-      window.location.href = '/admin';
+      // Login API - sets access token in memory and refresh token in cookie
+      await apiLogin({ email, password });
+      
       console.log("Login successful");
+      
+      // Update auth context (NO reload needed - token already in memory)
+      setAuthLogin();
+      
+      // Navigate to admin
+      navigate('/admin');
       setLoading(false);
     } catch (err) {
-      setError("Login failed. Please check your credentials.");
+      setError(err.message || "Login failed. Please check your credentials.");
       setLoading(false);
     } 
   };

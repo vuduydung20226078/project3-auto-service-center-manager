@@ -8,5 +8,6 @@ router.use(auth);
 router.get('/', rbac('Admin', 'Warehouse', 'Advisor'), ctrl.list);
 router.post('/entries', rbac('Warehouse', 'Admin'), ctrl.addEntry); // IN/OUT manual
 router.get('/low', rbac('Admin', 'Warehouse'), ctrl.low);
+router.delete('/:part_id/:location', rbac('Admin', 'Warehouse'), ctrl.deleteStock);
 
 module.exports = router;

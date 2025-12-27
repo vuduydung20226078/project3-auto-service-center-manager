@@ -118,3 +118,21 @@ exports.getLowStock = async () => {
         ORDER BY s.qty ASC
     `, { type: sequelize.QueryTypes.SELECT });
 };
+
+// Xóa stock (chỉ cho phép khi qty = 0)
+exports.deleteStock = async ({ part_id, location }) => {
+    const stock = await Stock.findOne({
+        where: { part_id, location }
+    });
+
+    if (!stock) {
+        throw new Error('Stock record not found');
+    }
+
+    if (stock.qty > 0) {
+        throw new Error(`Cannot delete stock with quantity ${stock.qty}. Stock must be empty (qty = 0) before deletion.`);
+    }
+
+    await stock.destroy();
+    return { message: 'Stock record deleted successfully' };
+};

@@ -48,3 +48,19 @@ exports.low = async (req, res) => {
         res.status(500).json({ message: 'Server error', error: error.message });
     }
 };
+
+// Xóa stock (chỉ cho phép khi qty = 0)
+exports.deleteStock = async (req, res) => {
+    const { part_id, location } = req.params;
+    try {
+        const result = await stocksService.deleteStock({
+            part_id: parseInt(part_id),
+            location
+        });
+        res.json({ success: true, ...result });
+    } catch (error) {
+        const statusCode = error.message.includes('not found') ? 404 :
+            error.message.includes('Cannot delete') ? 400 : 500;
+        res.status(statusCode).json({ message: error.message });
+    }
+};

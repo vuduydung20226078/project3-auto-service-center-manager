@@ -1,18 +1,9 @@
 import api from './api';
 
-const getAuthHeaders = () => {
-    const token = localStorage.getItem('token');
-    return {
-        headers: {
-            Authorization: `Bearer ${token}`
-        }
-    };
-};
-
 export const usersApi = {
     async getAll() {
         try {
-            const response = await api.get('/users', getAuthHeaders());
+            const response = await api.get('/users');
             return response.data;
         } catch (error) {
             console.error('Error fetching users:', error.response?.data || error.message);
@@ -22,7 +13,7 @@ export const usersApi = {
 
     async getById(id) {
         try {
-            const response = await api.get(`/users/${id}`, getAuthHeaders());
+            const response = await api.get(`/users/${id}`);
             return response.data;
         } catch (error) {
             console.error(`Error fetching user ${id}:`, error.response?.data || error.message);
@@ -32,7 +23,7 @@ export const usersApi = {
 
     async update(id, data) {
         try {
-            const response = await api.put(`/users/${id}`, data, getAuthHeaders());
+            const response = await api.put(`/users/${id}`, data);
             return response.data;
         } catch (error) {
             console.error(`Error updating user ${id}:`, error.response?.data || error.message);
@@ -42,7 +33,7 @@ export const usersApi = {
 
     async toggleStatus(id, status) {
         try {
-            const response = await api.patch(`/users/${id}/status`, { status }, getAuthHeaders());
+            const response = await api.patch(`/users/${id}/status`, { status });
             return response.data;
         } catch (error) {
             console.error(`Error toggling user ${id} status:`, error.response?.data || error.message);
@@ -52,7 +43,7 @@ export const usersApi = {
 
     async delete(id) {
         try {
-            const response = await api.delete(`/users/${id}`, getAuthHeaders());
+            const response = await api.delete(`/users/${id}`);
             return response.data;
         } catch (error) {
             console.error(`Error deleting user ${id}:`, error.response?.data || error.message);

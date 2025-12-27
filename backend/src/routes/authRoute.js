@@ -9,4 +9,10 @@ router.post('/login', authController.login);
 // Đăng ký
 router.post('/register', authController.register);
 
+// Refresh access token
+router.post('/refresh', authController.refresh);
+
+// Logout
+router.post('/logout', authController.logout);
+
 module.exports = router;

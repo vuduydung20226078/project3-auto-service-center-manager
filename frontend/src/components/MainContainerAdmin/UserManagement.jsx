@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { FaUserSlash, FaUserCheck } from 'react-icons/fa';
-import DynamicTable from './DynamicTable';
-import { usersApi } from '../api/usersApi';
+import DynamicTable from '../Table/DynamicTable';
+import { usersApi } from '../../api/usersApi';
 
 const PageContainer = styled.div`
   margin-left: 280px;

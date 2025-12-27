@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const cookieParser = require('cookie-parser');
 require('dotenv').config();
 const { sequelize } = require('./models');  // Kết nối DB
 
@@ -10,7 +11,14 @@ const catalogsRoutes = require('./routes/catalogsRoute');
 
 // Create Express app
 const app = express();
-app.use(cors());
+
+// CORS configuration for credentials
+app.use(cors({
+    origin: 'http://localhost:5173', // Frontend URL
+    credentials: true // Allow cookies
+}));
+
+app.use(cookieParser()); // Parse cookies
 app.use(express.json());  // Parse JSON requests
 
 // Setup routes
@@ -21,6 +29,7 @@ app.use('/api/bookings', require('./routes/bookingsRoute')); // Đăng ký route
 app.use('/api/work-orders', require('./routes/workOrdersRoute')); // Đăng ký route cho work orders  
 app.use('/api/billing', require('./routes/billingRoute')); // Đăng ký route cho billing
 app.use('/api/stocks', require('./routes/stocksRoute')); // Đăng ký route cho stocks
+app.use('/api/dashboard', require('./routes/dashboardRoute')); // Đăng ký route cho dashboard
 
 app.use((err, req, res, next) => {
     // In ra thông tin lỗi chi tiết vào console để debug

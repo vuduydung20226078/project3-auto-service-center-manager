@@ -1,9 +1,13 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { logout as apiLogout } from '../api/auth';
+import { useAuth } from '../contexts/AuthContext';
 import styled from 'styled-components';
-import AdminSidebar from '../components/AdminSidebar';
-import CategoryManagement from '../components/CategoryManagement';
-import UserManagement from '../components/UserManagement';
-import InventoryManagement from '../components/InventoryManagement';
+import AdminSidebar from '../components/Layout/AdminSidebar';
+import Dashboard from '../components/MainContainerAdmin/Dashboard';
+import CategoryManagement from '../components/MainContainerAdmin/CategoryManagement';
+import UserManagement from '../components/MainContainerAdmin/UserManagement';
+import InventoryManagement from '../components/MainContainerAdmin/InventoryManagement';
 
 const AdminContainer = styled.div`
   display: flex;
@@ -12,19 +16,29 @@ const AdminContainer = styled.div`
 `;
 
 const AdminDashboard = () => {
-  const [activeMenu, setActiveMenu] = useState('category');
+  const navigate = useNavigate();
+  const { logout: setAuthLogout } = useAuth();
+  const [activeMenu, setActiveMenu] = useState('dashboard');
 
   const handleMenuClick = (menuId) => {
     setActiveMenu(menuId);
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem('token');
-    window.location.href = '/';
+  const handleLogout = async () => {
+    try {
+      await apiLogout();
+    } catch (error) {
+      console.error('Logout API error:', error);
+    } finally {
+      setAuthLogout();
+      navigate('/');
+    }
   };
 
   const renderContent = () => {
     switch (activeMenu) {
+      case 'dashboard':
+        return <Dashboard />;
       case 'category':
         return <CategoryManagement />;
       case 'users':
@@ -40,7 +54,7 @@ const AdminDashboard = () => {
       case 'control':
         return <div style={{ marginLeft: '280px', padding: '30px' }}>Control Panel Coming Soon</div>;
       default:
-        return <CategoryManagement />;
+        return <Dashboard />;
     }
   };
 
