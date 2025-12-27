@@ -12,10 +12,28 @@ exports.list = async (req, res) => {
 
 // Thêm entry vào stock (nhập/xuất)
 exports.addEntry = async (req, res) => {
-    const { part_id, qty, type, ref } = req.body; // type: IN/OUT
+    const { part_id, qty, type, ref_type, location, target_location } = req.body;
     try {
-        await stocksService.addStockEntry({ part_id, qty, type, ref, user_id: req.user.id });
-        res.status(201).json({ success: true });
+        await stocksService.addStockEntry({
+            part_id,
+            qty,
+            type,
+            ref_type,
+            location,
+            target_location,
+            user_id: req.user.id
+        });
+        console.log(req.user.id);
+        let message = 'Stock entry created successfully';
+        if (ref_type === 'ADJ') {
+            message = `Adjusted ${qty} items from ${location} to ${target_location}`;
+        } else if (type === 'IN') {
+            message = `Added ${qty} items to stock`;
+        } else {
+            message = `Removed ${qty} items from stock`;
+        }
+
+        res.status(201).json({ success: true, message });
     } catch (error) {
         res.status(500).json({ message: 'Server error', error: error.message });
     }

@@ -285,7 +285,9 @@ const InventoryManagement = () => {
     part_id: '',
     qty: '',
     type: 'IN',
-    ref: ''
+    ref_type: 'MANUAL',
+    location: '',
+    target_location: ''
   });
 
   useEffect(() => {
@@ -315,7 +317,9 @@ const InventoryManagement = () => {
       part_id: '',
       qty: '',
       type: 'IN',
-      ref: ''
+      ref_type: 'MANUAL',
+      location: '',
+      target_location: ''
     });
     setShowModal(true);
   };
@@ -326,10 +330,22 @@ const InventoryManagement = () => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    setFormData(prev => {
+      const updated = { ...prev, [name]: value };
+      
+      // Auto-set type based on ref_type
+      if (name === 'ref_type') {
+        if (value === 'RET' || value === 'PO') {
+          updated.type = 'IN'; // Return và Purchase Order là nhập kho
+        } else if (value === 'WO' || value === 'INV' || value === 'DAMAGED' || value === 'LOST') {
+          updated.type = 'OUT'; // Work Order, Invoice, Damaged, Lost là xuất kho
+        } else if (value === 'ADJ') {
+          updated.type = 'OUT'; // Adjustment cần OUT từ location nguồn
+        }
+      }
+      
+      return updated;
+    });
   };
 
   const handleSubmit = async (e) => {
@@ -424,7 +440,7 @@ const InventoryManagement = () => {
       render: (value, row) => row.Part?.unit || 'N/A'
     },
     { 
-      key: 'last_updated', 
+      key: 'updated_at', 
       label: 'Last Updated', 
       type: 'date', 
       width: '120px' 
@@ -540,12 +556,32 @@ const InventoryManagement = () => {
                 </FormGroup>
 
                 <FormGroup>
-                  <Label>Type *</Label>
+                  <Label>Entry Type *</Label>
+                  <Select
+                    name="ref_type"
+                    value={formData.ref_type}
+                    onChange={handleChange}
+                    required
+                  >
+                    <option value="MANUAL">MANUAL - Manual Entry</option>
+                    <option value="RET">RET - Return (Trả hàng)</option>
+                    <option value="ADJ">ADJ - Adjustment (Di chuyển kệ)</option>
+                    <option value="PO">PO - Purchase Order (Nhập hàng)</option>
+                    <option value="WO">WO - Work Order (Xuất sửa xe)</option>
+                    <option value="INV">INV - Invoice (Bán trực tiếp)</option>
+                    <option value="DAMAGED">DAMAGED - Hư hỏng</option>
+                    <option value="LOST">LOST - Mất mát</option>
+                  </Select>
+                </FormGroup>
+
+                <FormGroup>
+                  <Label>Transaction Type *</Label>
                   <Select
                     name="type"
                     value={formData.type}
                     onChange={handleChange}
                     required
+                    disabled={formData.ref_type !== 'MANUAL'}
                   >
                     <option value="IN">IN (Add Stock)</option>
                     <option value="OUT">OUT (Remove Stock)</option>
@@ -566,15 +602,30 @@ const InventoryManagement = () => {
                 </FormGroup>
 
                 <FormGroup>
-                  <Label>Reference</Label>
+                  <Label>{formData.ref_type === 'ADJ' ? 'Source Location *' : 'Location'}</Label>
                   <Input
                     type="text"
-                    name="ref"
-                    value={formData.ref}
+                    name="location"
+                    value={formData.location}
                     onChange={handleChange}
-                    placeholder="e.g., PO-12345, WO-67890"
+                    placeholder="e.g., Shelf A-1, Zone B"
+                    required={formData.ref_type === 'ADJ'}
                   />
                 </FormGroup>
+
+                {formData.ref_type === 'ADJ' && (
+                  <FormGroup>
+                    <Label>Target Location *</Label>
+                    <Input
+                      type="text"
+                      name="target_location"
+                      value={formData.target_location}
+                      onChange={handleChange}
+                      placeholder="e.g., Shelf C-2, Zone D"
+                      required
+                    />
+                  </FormGroup>
+                )}
               </ModalBody>
 
               <ModalFooter>

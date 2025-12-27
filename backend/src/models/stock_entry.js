@@ -5,13 +5,19 @@ module.exports = (sequelize, DataTypes) => {
         part_id: { type: DataTypes.INTEGER, allowNull: false },
         qty: { type: DataTypes.INTEGER, allowNull: false },
         type: { type: DataTypes.ENUM('IN', 'OUT'), allowNull: false },
-        ref: { type: DataTypes.STRING(200) },
-        created_by: { type: DataTypes.INTEGER },
-        created_at: { type: DataTypes.DATE, allowNull: false, defaultValue: DataTypes.NOW }
+        ref_type: {
+            type: DataTypes.ENUM('RET', 'ADJ', 'PO', 'WO', 'INV', 'DAMAGED', 'LOST', 'MANUAL'),
+            allowNull: false,
+            defaultValue: 'MANUAL',
+            comment: 'RET=Return, ADJ=Adjustment, PO=Purchase Order, WO=Work Order, INV=Invoice'
+        },
+        created_by: { type: DataTypes.INTEGER }
     }, {
         tableName: 'stock_entries',
         underscored: true,
-        timestamps: false
+        timestamps: true,
+        createdAt: 'created_at',
+        updatedAt: false
     });
 
     StockEntry.associate = models => {

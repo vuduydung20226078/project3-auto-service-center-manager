@@ -11,27 +11,52 @@ const getAuthHeaders = () => {
 
 export const usersApi = {
     async getAll() {
-        const response = await api.get('/users', getAuthHeaders());
-        return response.data;
+        try {
+            const response = await api.get('/users', getAuthHeaders());
+            return response.data;
+        } catch (error) {
+            console.error('Error fetching users:', error.response?.data || error.message);
+            throw error;
+        }
     },
 
     async getById(id) {
-        const response = await api.get(`/users/${id}`, getAuthHeaders());
-        return response.data;
+        try {
+            const response = await api.get(`/users/${id}`, getAuthHeaders());
+            return response.data;
+        } catch (error) {
+            console.error(`Error fetching user ${id}:`, error.response?.data || error.message);
+            throw error;
+        }
     },
 
     async update(id, data) {
-        const response = await api.put(`/users/${id}`, data, getAuthHeaders());
-        return response.data;
+        try {
+            const response = await api.put(`/users/${id}`, data, getAuthHeaders());
+            return response.data;
+        } catch (error) {
+            console.error(`Error updating user ${id}:`, error.response?.data || error.message);
+            throw error;
+        }
     },
 
     async toggleStatus(id, status) {
-        const response = await api.patch(`/users/${id}/status`, { status }, getAuthHeaders());
-        return response.data;
+        try {
+            const response = await api.patch(`/users/${id}/status`, { status }, getAuthHeaders());
+            return response.data;
+        } catch (error) {
+            console.error(`Error toggling user ${id} status:`, error.response?.data || error.message);
+            throw error;
+        }
     },
 
     async delete(id) {
-        const response = await api.delete(`/users/${id}`, getAuthHeaders());
-        return response.data;
+        try {
+            const response = await api.delete(`/users/${id}`, getAuthHeaders());
+            return response.data;
+        } catch (error) {
+            console.error(`Error deleting user ${id}:`, error.response?.data || error.message);
+            throw error;
+        }
     }
 };

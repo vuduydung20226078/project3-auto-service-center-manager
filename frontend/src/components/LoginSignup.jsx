@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import styled from "styled-components";
 import {FaKey, FaEnvelope, FaUser, FaTimes} from "react-icons/fa";
+
 import axios from "axios";
 const Base_URL = "http://localhost:3000/api";
 const Container = styled.div`
@@ -102,16 +103,59 @@ const Button = styled.button`
     background-color: ${(props) => (props.$active? "#d4d4d4" : "#3c009d")};
   }
 `;
+
+const SuccessNotification = styled.div`
+  position: fixed;
+  top: ${props => props.$show ? '20px' : '-100px'};
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: #4caf50;
+  color: white;
+  padding: 16px 32px;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transition: top 0.3s ease-in-out;
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+`;
+
 const LoginSignup = () => {
   const [action, setAction] = useState("Login");
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [emailError, setEmailError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [successMessage, setSuccessMessage] = useState("");
+
+  const validateEmail = (email) => {
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    return emailRegex.test(email);
+  };
+
+  const handleEmailChange = (e) => {
+    const value = e.target.value;
+    setEmail(value);
+    if (value && !validateEmail(value)) {
+      setEmailError("Please enter a valid email address (e.g., user@gmail.com)");
+    } else {
+      setEmailError("");
+    }
+  };
+
   const handleLogin = async () => {
+    if (!validateEmail(email)) {
+      setError("Please enter a valid email address");
+      return;
+    }
     setLoading(true);
     setError("");
+    setEmailError("");
     try {
       const response = await axios.post(`${Base_URL}/auth/login`, { email, password });
       localStorage.setItem("token", response.data.token);
@@ -125,19 +169,41 @@ const LoginSignup = () => {
     } 
   };
   const handleSignup = async () => {
+    if (!validateEmail(email)) {
+      setError("Please enter a valid email address");
+      return;
+    }
     setLoading(true);
     setError("");
+    setEmailError("");
     try {
       const response = await axios.post(`${Base_URL}/auth/register`, { username, email, password });
       console.log("Signup successful");
       setLoading(false);
+      
+      // Hiển thị thông báo thành công
+      setSuccessMessage("Account created successfully! Please login.");
+      
+      // Sau 3 giây, ẩn thông báo và chuyển sang login
+      setTimeout(() => {
+        setSuccessMessage("");
+        setAction("Login");
+        // Reset form
+        setUsername("");
+        setPassword("");
+      }, 3000);
     } catch (err) {
       setError("Signup failed. Please try again.");
       setLoading(false);
     }
   };
+
   return(
     <>
+      <SuccessNotification $show={!!successMessage}>
+        ✓ {successMessage}
+      </SuccessNotification>
+      
       <Container>
           <Header>
             <Title>{action}</Title>
@@ -148,16 +214,36 @@ const LoginSignup = () => {
             <InputGroup>
               {action === "Login" ? null: <Icon><FaUser /></Icon>}
               {action === "Login" ? null : 
-              <Input type="text" placeholder="Username" value={username} onChange={(e) => setUsername(e.target.value)}/>}
+              <Input 
+                type="text" 
+                placeholder="Username" 
+                value={username} 
+                onChange={(e) => setUsername(e.target.value)}
+                required
+              />}
               
             </InputGroup>
-            <InputGroup>
+            <InputGroup style={{ borderColor: emailError ? '#ff0000' : '#eaeaea' }}>
               <Icon><FaEnvelope /></Icon>
-              <Input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} />
+              <Input 
+                type="email" 
+                placeholder="Email" 
+                value={email} 
+                onChange={handleEmailChange}
+                required
+              />
             </InputGroup>
+            {emailError && <div style={{ color: '#ff0000', fontSize: '13px', marginTop: '-15px', width: '400px' }}>{emailError}</div>}
             <InputGroup>
               <Icon><FaKey /></Icon>
-              <Input type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)}/>
+              <Input 
+                type="password" 
+                placeholder="Password" 
+                value={password} 
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                minLength="6"
+              />
             </InputGroup>
             {error && <div style={{ color: 'red' }}>{error}</div>}
             <ForgotPassword>Lost Password? <span>Click Here!</span></ForgotPassword>

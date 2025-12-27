@@ -1,11 +1,18 @@
 'use strict';
 module.exports = (sequelize, DataTypes) => {
     const Stock = sequelize.define('Stock', {
-        id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
-        part_id: { type: DataTypes.INTEGER, allowNull: false },
-        qty: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 },
-        location: { type: DataTypes.STRING(100) },
-        last_updated: { type: DataTypes.DATE, allowNull: false, defaultValue: DataTypes.NOW }
+        part_id: {
+            type: DataTypes.INTEGER,
+            allowNull: false,
+            primaryKey: true
+        },
+        location: {
+            type: DataTypes.STRING(100),
+            allowNull: false,
+            defaultValue: 'Default',
+            primaryKey: true
+        },
+        qty: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 }
     }, {
         tableName: 'stocks',
         underscored: true,
@@ -18,3 +25,4 @@ module.exports = (sequelize, DataTypes) => {
 
     return Stock;
 };
+

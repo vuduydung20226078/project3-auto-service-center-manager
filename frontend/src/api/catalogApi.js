@@ -24,7 +24,11 @@ export const servicesApi = {
             const response = await axios.get(`${API_BASE_URL}/catalogs/services`, getAuthHeaders());
             return response.data;
         } catch (error) {
-            console.error('Error fetching services:', error);
+            console.error('Error fetching services:', {
+                status: error.response?.status,
+                message: error.response?.data?.message || error.message,
+                data: error.response?.data
+            });
             throw error;
         }
     },
@@ -41,7 +45,12 @@ export const servicesApi = {
             );
             return response.data;
         } catch (error) {
-            console.error('Error creating service:', error);
+            console.error('Error creating service:', {
+                request: data,
+                status: error.response?.status,
+                message: error.response?.data?.message || error.message,
+                data: error.response?.data
+            });
             throw error;
         }
     },
@@ -58,7 +67,12 @@ export const servicesApi = {
             );
             return response.data;
         } catch (error) {
-            console.error('Error updating service:', error);
+            console.error(`Error updating service ${id}:`, {
+                request: data,
+                status: error.response?.status,
+                message: error.response?.data?.message || error.message,
+                data: error.response?.data
+            });
             throw error;
         }
     },
@@ -73,7 +87,11 @@ export const servicesApi = {
                 getAuthHeaders()
             );
         } catch (error) {
-            console.error('Error deleting service:', error);
+            console.error(`Error deleting service ${id}:`, {
+                status: error.response?.status,
+                message: error.response?.data?.message || error.message,
+                data: error.response?.data
+            });
             throw error;
         }
     },
@@ -89,7 +107,11 @@ export const partsApi = {
             const response = await axios.get(`${API_BASE_URL}/catalogs/parts`, getAuthHeaders());
             return response.data;
         } catch (error) {
-            console.error('Error fetching parts:', error);
+            console.error('Error fetching parts:', {
+                status: error.response?.status,
+                message: error.response?.data?.message || error.message,
+                data: error.response?.data
+            });
             throw error;
         }
     },
@@ -106,7 +128,12 @@ export const partsApi = {
             );
             return response.data;
         } catch (error) {
-            console.error('Error creating part:', error);
+            console.error('Error creating part:', {
+                request: data,
+                status: error.response?.status,
+                message: error.response?.data?.message || error.message,
+                data: error.response?.data
+            });
             throw error;
         }
     },
@@ -123,7 +150,12 @@ export const partsApi = {
             );
             return response.data;
         } catch (error) {
-            console.error('Error updating part:', error);
+            console.error(`Error updating part ${id}:`, {
+                request: data,
+                status: error.response?.status,
+                message: error.response?.data?.message || error.message,
+                data: error.response?.data
+            });
             throw error;
         }
     },
@@ -138,7 +170,11 @@ export const partsApi = {
                 getAuthHeaders()
             );
         } catch (error) {
-            console.error('Error deleting part:', error);
+            console.error(`Error deleting part ${id}:`, {
+                status: error.response?.status,
+                message: error.response?.data?.message || error.message,
+                data: error.response?.data
+            });
             throw error;
         }
     },
