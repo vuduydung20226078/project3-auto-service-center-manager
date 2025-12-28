@@ -27,14 +27,20 @@ import StatCard from '../common/StatCard';
 import { dashboardApi } from '../../api/dashboardApi';
 
 const PageContainer = styled.div`
-  margin-left: 280px;
+  /* Keep equal space on both sides to balance with the left sidebar */
+  margin: 30px 280px;
   padding: 30px;
   min-height: 100vh;
+  width: calc(100% - 560px);
   background-color: #f9f9f9;
+  box-sizing: border-box;
+  align-items: center;
+  padding-left: 100px;
 `;
 
 const Header = styled.div`
   margin-bottom: 30px;
+ 
 `;
 
 const Title = styled.h1`
@@ -217,6 +223,7 @@ const Dashboard = () => {
   }
 
   return (
+    
     <PageContainer>
       <Header>
         <Title>Dashboard</Title>

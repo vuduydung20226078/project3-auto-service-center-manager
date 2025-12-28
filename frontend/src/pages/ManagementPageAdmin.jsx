@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { logout as apiLogout } from '../api/auth';
 import { useAuth } from '../contexts/AuthContext';
@@ -8,6 +8,7 @@ import Dashboard from '../components/MainContainerAdmin/Dashboard';
 import CategoryManagement from '../components/MainContainerAdmin/CategoryManagement';
 import UserManagement from '../components/MainContainerAdmin/UserManagement';
 import InventoryManagement from '../components/MainContainerAdmin/InventoryManagement';
+import WorkOrderManagement from '../components/MainContainerAdmin/WorkOrderManagement';
 
 const AdminContainer = styled.div`
   display: flex;
@@ -18,10 +19,13 @@ const AdminContainer = styled.div`
 const AdminDashboard = () => {
   const navigate = useNavigate();
   const { logout: setAuthLogout } = useAuth();
-  const [activeMenu, setActiveMenu] = useState('dashboard');
+  const [activeMenu, setActiveMenu] = useState(() => {
+    return sessionStorage.getItem('activeMenu') || 'dashboard';
+  });
 
   const handleMenuClick = (menuId) => {
     setActiveMenu(menuId);
+    sessionStorage.setItem('activeMenu', menuId);
   };
 
   const handleLogout = async () => {
@@ -48,7 +52,7 @@ const AdminDashboard = () => {
       case 'appointment':
         return <div style={{ marginLeft: '280px', padding: '30px' }}>Appointment Management Coming Soon</div>;
       case 'workorder':
-        return <div style={{ marginLeft: '280px', padding: '30px' }}>Work Order Coming Soon</div>;
+        return <WorkOrderManagement />;
       case 'technician':
         return <div style={{ marginLeft: '280px', padding: '30px' }}>Technician Assignment Coming Soon</div>;
       case 'control':
