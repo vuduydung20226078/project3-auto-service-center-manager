@@ -20,6 +20,16 @@ exports.list = async (req, res) => {
     }
 };
 
+exports.getById = async (req, res) => {
+    try {
+        const row = await bookingsService.getBookingById(req.params.id);
+        if (!row) return res.status(404).json({ message: 'Booking not found' });
+        res.json(row);
+    } catch (error) {
+        res.status(500).json({ message: 'Server error', error });
+    }
+};
+
 exports.confirm = async (req, res) => {
     try {
         const row = await bookingsService.confirmBooking(req.params.id);

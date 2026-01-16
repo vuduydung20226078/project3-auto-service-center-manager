@@ -8,6 +8,7 @@ router.use(auth);
 // Khách & Advisor
 router.post('/', rbac('Customer', 'Advisor', 'Admin'), ctrl.create);
 router.get('/', rbac('Customer', 'Advisor', 'Admin'), ctrl.list);
+router.get('/:id', rbac('Customer', 'Advisor', 'Admin'), ctrl.getById);
 
 // Advisor xác nhận / huỷ
 router.put('/:id/confirm', rbac('Advisor', 'Admin'), ctrl.confirm);

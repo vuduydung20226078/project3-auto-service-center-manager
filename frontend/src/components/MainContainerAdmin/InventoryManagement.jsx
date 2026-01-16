@@ -468,7 +468,7 @@ const InventoryManagement = () => {
       render: (value, row) => row.Part?.unit || 'N/A'
     },
     { 
-      key: 'updated_at', 
+      key: 'createdAt', 
       label: 'Last Updated', 
       type: 'date', 
       width: '120px' 
@@ -571,7 +571,7 @@ const InventoryManagement = () => {
             onDelete={null}
             onView={null}
             showActions={false}
-            itemsPerPage={15}
+            itemsPerPage={10}
           />
         )}
       </ContentWrapper>

@@ -144,7 +144,7 @@ const AdminSidebar = ({ activeMenu, onMenuClick, onLogout }) => {
     { id: 'inventory', label: 'Inventory Management', icon: FaBox },
     { id: 'category', label: 'Category Management', icon: FaFolderOpen },
     { id: 'users', label: 'User Management', icon: FaUsers },
-    
+    { id: 'bookings', label: 'Booking Management', icon: FaCalendarAlt },
     { id: 'workorder', label: 'Work Order', icon: FaTools },
    
 

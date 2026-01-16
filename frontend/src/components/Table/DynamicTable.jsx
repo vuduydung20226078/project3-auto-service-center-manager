@@ -236,8 +236,7 @@ const DynamicTable = ({
         return typeof value === 'number' ? (Number.isInteger(value) ? value : value.toFixed(2)) : value;
       
       case 'date':
-        return new Date(value).toLocaleDateString();
-      
+        return value ? new Date(value).toLocaleDateString() : '-';
       case 'currency':
         return typeof value === 'number' ? `$${value.toFixed(2)}` : value;
       

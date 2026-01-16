@@ -9,7 +9,7 @@ import CategoryManagement from '../components/MainContainerAdmin/CategoryManagem
 import UserManagement from '../components/MainContainerAdmin/UserManagement';
 import InventoryManagement from '../components/MainContainerAdmin/InventoryManagement';
 import WorkOrderManagement from '../components/MainContainerAdmin/WorkOrderManagement';
-
+import BookingManagement from '../components/MainContainerAdmin/BookingManagement';
 const AdminContainer = styled.div`
   display: flex;
   min-height: 100vh;
@@ -55,8 +55,8 @@ const AdminDashboard = () => {
         return <WorkOrderManagement />;
       case 'technician':
         return <div style={{ marginLeft: '280px', padding: '30px' }}>Technician Assignment Coming Soon</div>;
-      case 'control':
-        return <div style={{ marginLeft: '280px', padding: '30px' }}>Control Panel Coming Soon</div>;
+      case 'bookings':
+        return <BookingManagement />;
       default:
         return <Dashboard />;
     }
