@@ -3,15 +3,16 @@ const auth = require('../middlewares/auth');
 const rbac = require('../middlewares/rbac');
 const ctrl = require('../controllers/bookingsController');
 
-router.use(auth);
+// Public endpoints for customer booking
+router.post('/customer-booking', ctrl.createCustomerBooking); // New smart endpoint
+router.post('/', ctrl.create); // Legacy endpoint
 
-// Khách & Advisor
-router.post('/', rbac('Customer', 'Advisor', 'Admin'), ctrl.create);
-router.get('/', rbac('Customer', 'Advisor', 'Admin'), ctrl.list);
-router.get('/:id', rbac('Customer', 'Advisor', 'Admin'), ctrl.getById);
+// Protected routes
+router.get('/', auth, rbac('Customer', 'Advisor', 'Admin'), ctrl.list);
+router.get('/:id', auth, rbac('Customer', 'Advisor', 'Admin'), ctrl.getById);
 
 // Advisor xác nhận / huỷ
-router.put('/:id/confirm', rbac('Advisor', 'Admin'), ctrl.confirm);
-router.put('/:id/cancel', rbac('Advisor', 'Admin'), ctrl.cancel);
+router.put('/:id/confirm', auth, rbac('Advisor', 'Admin'), ctrl.confirm);
+router.put('/:id/cancel', auth, rbac('Advisor', 'Admin'), ctrl.cancel);
 
 module.exports = router;

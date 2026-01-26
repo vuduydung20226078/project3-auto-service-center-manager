@@ -54,5 +54,37 @@ export const techniciansApi = {
             console.error(`Error deleting technician ${id}:`, error);
             throw error;
         }
+    },
+
+    // 🔥 Get available technicians for a time slot
+    async getAvailable(startTime, endTime) {
+        try {
+            const response = await api.get('/technicians/available', {
+                params: {
+                    start: startTime,
+                    end: endTime
+                }
+            });
+            return response.data;
+        } catch (error) {
+            console.error('Error fetching available technicians:', error);
+            throw error;
+        }
+    },
+
+    // 🔥 Get technician schedule
+    async getSchedule(technicianId, fromDate, toDate) {
+        try {
+            const response = await api.get(`/technicians/${technicianId}/schedule`, {
+                params: {
+                    from: fromDate,
+                    to: toDate
+                }
+            });
+            return response.data;
+        } catch (error) {
+            console.error(`Error fetching technician ${technicianId} schedule:`, error);
+            throw error;
+        }
     }
 };

@@ -10,6 +10,36 @@ exports.create = async (req, res) => {
     }
 };
 
+/**
+ * Create booking for customer without login
+ * Accepts customerData and vehicleData in request body
+ */
+exports.createCustomerBooking = async (req, res) => {
+    try {
+        const { customerData, vehicleData, scheduled_at, notes, selectedServices } = req.body;
+
+        const result = await bookingsService.createCustomerBooking({
+            customerData,
+            vehicleData,
+            scheduled_at,
+            notes
+        });
+
+        res.status(201).json({
+            success: true,
+            booking: result.booking,
+            customer: result.customer,
+            vehicle: result.vehicle,
+            meta: result.meta
+        });
+    } catch (error) {
+        if (error.message.includes('required') || error.message.includes('already registered')) {
+            return res.status(400).json({ message: error.message });
+        }
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
+};
+
 exports.list = async (req, res) => {
     try {
         const { customer_id, from, to } = req.query;

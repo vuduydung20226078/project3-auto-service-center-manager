@@ -5,7 +5,8 @@ module.exports = (sequelize, DataTypes) => {
         work_order_id: { type: DataTypes.INTEGER },
         invoice_no: { type: DataTypes.STRING(100), unique: true },
         amount_due: { type: DataTypes.DECIMAL(12, 2), allowNull: false, defaultValue: 0.00 },
-        status: { type: DataTypes.ENUM('UNPAID', 'PARTIALLY_PAID', 'PAID'), defaultValue: 'UNPAID' }
+        status: { type: DataTypes.ENUM('UNPAID', 'PARTIALLY_PAID', 'PAID'), defaultValue: 'UNPAID' },
+        created_by: { type: DataTypes.INTEGER }
     }, {
         tableName: 'invoices',
         underscored: true,
@@ -15,6 +16,7 @@ module.exports = (sequelize, DataTypes) => {
     Invoice.associate = models => {
         Invoice.belongsTo(models.WorkOrder, { foreignKey: 'work_order_id' });
         Invoice.hasMany(models.Payment, { foreignKey: 'invoice_id' });
+        Invoice.belongsTo(models.User, { foreignKey: 'created_by', as: 'Creator' });
     };
 
     return Invoice;

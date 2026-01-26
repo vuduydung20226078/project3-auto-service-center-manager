@@ -10,10 +10,18 @@ import UserManagement from '../components/MainContainerAdmin/UserManagement';
 import InventoryManagement from '../components/MainContainerAdmin/InventoryManagement';
 import WorkOrderManagement from '../components/MainContainerAdmin/WorkOrderManagement';
 import BookingManagement from '../components/MainContainerAdmin/BookingManagement';
+import TechnicianSchedule from '../components/MainContainerAdmin/TechnicianSchedule';
+import InvoiceManagement from '../components/MainContainerAdmin/InvoiceManagement';
 const AdminContainer = styled.div`
   display: flex;
   min-height: 100vh;
   background-color: #f9f9f9;
+`;
+
+const AdminContent = styled.main`
+  flex: 1;
+  min-width: 0;
+  overflow-x: auto;
 `;
 
 const AdminDashboard = () => {
@@ -54,9 +62,11 @@ const AdminDashboard = () => {
       case 'workorder':
         return <WorkOrderManagement />;
       case 'technician':
-        return <div style={{ marginLeft: '280px', padding: '30px' }}>Technician Assignment Coming Soon</div>;
+        return <TechnicianSchedule />;
       case 'bookings':
         return <BookingManagement />;
+      case 'invoices':
+        return <InvoiceManagement />;
       default:
         return <Dashboard />;
     }
@@ -69,7 +79,9 @@ const AdminDashboard = () => {
         onMenuClick={handleMenuClick}
         onLogout={handleLogout}
       />
-      {renderContent()}
+      <AdminContent>
+        {renderContent()}
+      </AdminContent>
     </AdminContainer>
   );
 };

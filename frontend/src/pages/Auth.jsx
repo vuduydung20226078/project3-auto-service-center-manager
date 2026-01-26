@@ -1,19 +1,23 @@
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import Header from '../components/Layout/Header.jsx';
 import LoginSignup from '../components/Login/LoginSignup.jsx'; 
 
 function Auth() {
   const navigate = useNavigate();
-  const { isAuthenticated, isLoading } = useAuth();
-  console.log('Auth Page - isAuthenticated:', isAuthenticated, 'isLoading:', isLoading);
-  // Auto-redirect to admin if already authenticated
+  const { isAuthenticated, isLoading, user } = useAuth();
+  
+  // Auto-redirect based on user role if already authenticated
   useEffect(() => {
-    if (!isLoading && isAuthenticated) {
-      navigate('/admin');
+    if (!isLoading && isAuthenticated && user) {
+      // Redirect based on role
+      if (user.role === 'Customer') {
+        navigate('/customerlogedin', { replace: true });
+      } else {
+        navigate('/admin', { replace: true });
+      }
     }
-  }, [isAuthenticated, isLoading, navigate]);
+  }, [isAuthenticated, isLoading, user, navigate]);
 
   // Don't show login page while checking auth
   if (isLoading) {
@@ -22,7 +26,6 @@ function Auth() {
 
   return (
     <div>
-      <Header />
       <LoginSignup />
     </div>
   );

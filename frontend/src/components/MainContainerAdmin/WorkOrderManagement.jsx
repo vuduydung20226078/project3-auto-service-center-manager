@@ -30,6 +30,13 @@ const Subtitle = styled.p`
   margin: 0;
 `;
 
+const ContentWrapper = styled.div`
+  background-color: white;
+  border-radius: 12px;
+  padding: 30px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+`;
+
 const StatsGrid = styled.div`
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
@@ -272,7 +279,8 @@ const WorkOrderManagement = () => {
         <Subtitle>Track and manage service work orders</Subtitle>
       </Header>
 
-      <StatsGrid>
+      <ContentWrapper>
+        <StatsGrid>
         <StatCard
           label="Active Orders"
           value={stats.activeOrders}
@@ -291,7 +299,7 @@ const WorkOrderManagement = () => {
         />
         <StatCard
           label="Total Revenue"
-          value={`${Number(stats.totalRevenue || 0).toFixed(2)}`}
+          value={`${Number(stats.totalRevenue || 0).toFixed(0)} VND`}
           icon={<FaDollarSign />}
           bgColor="#e8f5e9"
           borderColor="#10b981"
@@ -360,7 +368,7 @@ const WorkOrderManagement = () => {
                         })
                       : 'N/A'}
                   </Td>
-                  <Td>${wo.total_amount || '0.00'}</Td>
+                  <Td>{parseFloat(wo.total_amount || 0).toFixed(0)} VND</Td>
                   <Td>
                     <StatusBadge $status={wo.status?.toLowerCase().replace('_', '-')}>
                       {wo.status?.replace('_', ' ')}
@@ -408,6 +416,7 @@ const WorkOrderManagement = () => {
           onRefresh={fetchData}
         />
       )}
+      </ContentWrapper>
     </Container>
   );
 };

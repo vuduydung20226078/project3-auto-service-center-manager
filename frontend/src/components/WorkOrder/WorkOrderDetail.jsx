@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { FaTimes, FaUser, FaCar, FaTools, FaClipboardList } from 'react-icons/fa';
 import { workOrdersApi } from '../../api/workOrdersApi';
+import toast from '../../utils/toast';
 
 const Overlay = styled.div`
   position: fixed;
@@ -243,7 +244,7 @@ const WorkOrderDetail = ({ workOrder, onClose, onRefresh }) => {
       fetchDetails();
       onRefresh();
     } catch (error) {
-      alert('Error assigning technician');
+      toast.error('Error assigning technician');
     }
   };
 
@@ -257,7 +258,7 @@ const WorkOrderDetail = ({ workOrder, onClose, onRefresh }) => {
       fetchDetails();
       onRefresh();
     } catch (error) {
-      alert('Error updating status');
+      toast.error('Error updating status');
     }
   };
 
@@ -359,7 +360,7 @@ const WorkOrderDetail = ({ workOrder, onClose, onRefresh }) => {
                     Total Amount
                   </InfoLabel>
                   <InfoValue style={{ color: '#2563eb' }}>
-                    ${data.total_amount || '0.00'}
+                    {parseFloat(data.total_amount || 0).toFixed(0)} VND
                   </InfoValue>
                 </InfoCard>
               </InfoGrid>
@@ -394,13 +395,13 @@ const WorkOrderDetail = ({ workOrder, onClose, onRefresh }) => {
                         <Td>{item.item_type}</Td>
                         <Td>{item.name || item.description || 'N/A'}</Td>
                         <Td>{item.quantity}</Td>
-                        <Td>${item.unit_price || '0.00'}</Td>
-                        <Td>${item.line_total}</Td>
+                        <Td>{parseFloat(item.unit_price || 0).toFixed(0)} VND</Td>
+                        <Td>{parseFloat(item.line_total || 0).toFixed(0)} VND</Td>
                       </tr>
                     ))}
                     <TotalRow>
                       <Td colSpan="4" style={{ textAlign: 'right' }}>Total:</Td>
-                      <Td>${data.total_amount || '0.00'}</Td>
+                      <Td>{parseFloat(data.total_amount || 0).toFixed(0)} VND</Td>
                     </TotalRow>
                   </tbody>
                 </ItemsTable>

@@ -6,8 +6,14 @@ const authenticate = require('../middlewares/auth');
 // Tất cả routes đều require authentication
 router.use(authenticate);
 
+// GET /api/technicians/available - Get available technicians (must come before /:id)
+router.get('/available', techniciansController.getAvailable);
+
 // GET /api/technicians - Lấy danh sách technicians
 router.get('/', techniciansController.list);
+
+// GET /api/technicians/:id/schedule - Get technician schedule
+router.get('/:id/schedule', techniciansController.getSchedule);
 
 // GET /api/technicians/:id - Lấy chi tiết technician
 router.get('/:id', techniciansController.get);

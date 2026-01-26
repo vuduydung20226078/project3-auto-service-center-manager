@@ -34,13 +34,44 @@ exports.create = async (req, res) => {
 
 // Tạo work order từ booking
 exports.createFromBooking = async (req, res) => {
-    const { booking_id, technician_id, vehicle_id } = req.body;
+    const { booking_id, technician_id, vehicle_id, items = [], start_time, estimated_duration } = req.body;
+    const user_id = req.user?.id || 1; // Get from auth middleware
+
     try {
-        const wo = await workOrdersService.createWorkOrderFromBooking({ booking_id, technician_id, vehicle_id });
-        await workOrdersService.updateBookingStatus(booking_id, 'CONFIRMED');
-        res.status(201).json(wo);
+        // If items provided, create work order with items
+        if (items && items.length > 0) {
+            const wo = await workOrdersService.createWorkOrderWithItems({
+                booking_id,
+                vehicle_id,
+                technician_id,
+                status: 'OPEN',
+                items,
+                user_id,
+                start_time,
+                estimated_duration
+            });
+
+            // Update booking status to CONFIRMED and link work order
+            await workOrdersService.updateBookingWithWorkOrder(booking_id, wo.id, 'CONFIRMED');
+
+            res.status(201).json(wo);
+        } else {
+            // Create empty work order (legacy support)
+            const wo = await workOrdersService.createWorkOrderFromBooking({
+                booking_id,
+                technician_id,
+                vehicle_id
+            });
+
+            await workOrdersService.updateBookingWithWorkOrder(booking_id, wo.id, 'CONFIRMED');
+            res.status(201).json(wo);
+        }
     } catch (error) {
-        res.status(500).json({ message: 'Server error', error: error.message });
+        console.error('Error creating work order from booking:', error);
+        res.status(500).json({
+            message: error.message || 'Failed to create work order',
+            error: error.message
+        });
     }
 };
 

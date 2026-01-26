@@ -2,21 +2,15 @@ import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { FaEye, FaWrench, FaTrash, FaCalendar, FaCheckCircle, FaClock, FaTimesCircle } from 'react-icons/fa';
 import BookingDetailModal from '../Booking/BookingDetailModal';
-import CreateWorkOrderModal from '../Booking/CreateWorkOrderModal';
+import CreateWorkOrderFromBookingModal from '../Booking/CreateWorkOrderFromBookingModal';
 import * as bookingsApi from '../../api/bookingsApi';
-import api from '../../api/api';
+import toast from '../../utils/toast';
 
 const PageContainer = styled.div`
-  margin: 30px 280px;
+  margin-left: 280px;
   padding: 30px;
   min-height: 100vh;
   background-color: #f9f9f9;
-  box-sizing: border-box;
-
-  @media (max-width: 1300px) {
-    margin: 20px;
-    padding: 20px;
-  }
 `;
 
 const Header = styled.div`
@@ -33,6 +27,13 @@ const Title = styled.h1`
 const Subtitle = styled.p`
   font-size: 16px;
   color: #666;
+`;
+
+const ContentWrapper = styled.div`
+  background-color: white;
+  border-radius: 12px;
+  padding: 30px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 `;
 
 const StatsGrid = styled.div`
@@ -299,34 +300,26 @@ const BookingManagement = () => {
   };
 
   const handleCreateWorkOrder = (booking) => {
+    if (booking.status !== 'CONFIRMED') {
+      toast.warning('Please confirm the booking first before creating a work order');
+      return;
+    }
     setSelectedBooking(booking);
     setShowCreateWOModal(true);
   };
 
-  const handleConfirmCreateWorkOrder = async () => {
-    if (!selectedBooking) return;
-    
-    try {
-      // Call API to create work order from booking
-      await api.post('/work-orders/from-booking', {
-        booking_id: selectedBooking.id
-      });
-      
-      alert(`Work order created successfully for booking #${selectedBooking.id}`);
-      setShowCreateWOModal(false);
-      setShowDetailModal(false);
-      loadBookings(); // Reload to get updated data
-    } catch (err) {
-      console.error('Error creating work order:', err);
-      alert('Failed to create work order. Please try again.');
-    }
+  const handleWorkOrderCreated = () => {
+    toast.success('Work order created successfully!');
+    setShowCreateWOModal(false);
+    setShowDetailModal(false);
+    loadBookings(); // Reload bookings
   };
 
   const handleConfirm = async (booking) => {
     if (window.confirm(`Confirm booking #${booking.id}?`)) {
       try {
         await bookingsApi.confirmBooking(booking.id);
-        alert('Booking confirmed successfully');
+        toast.success('Booking confirmed successfully');
         loadBookings(); // Reload bookings
       } catch (err) {
         console.error('Error confirming booking:', err);
@@ -339,11 +332,11 @@ const BookingManagement = () => {
     if (window.confirm(`Cancel booking #${booking.id}?`)) {
       try {
         await bookingsApi.cancelBooking(booking.id);
-        alert('Booking cancelled successfully');
+        toast.success('Booking cancelled successfully');
         loadBookings(); // Reload bookings
       } catch (err) {
         console.error('Error cancelling booking:', err);
-        alert('Failed to cancel booking. Please try again.');
+        toast.error('Failed to cancel booking. Please try again.');
       }
     }
   };
@@ -354,12 +347,12 @@ const BookingManagement = () => {
     if (window.confirm(`Confirm booking #${selectedBooking.id}?`)) {
       try {
         await bookingsApi.confirmBooking(selectedBooking.id);
-        alert('Booking confirmed successfully');
+        toast.success('Booking confirmed successfully');
         setShowDetailModal(false);
         loadBookings(); // Reload bookings
       } catch (err) {
         console.error('Error confirming booking:', err);
-        alert('Failed to confirm booking. Please try again.');
+        toast.error('Failed to confirm booking. Please try again.');
       }
     }
   };
@@ -370,12 +363,12 @@ const BookingManagement = () => {
     if (window.confirm(`Cancel booking #${selectedBooking.id}?`)) {
       try {
         await bookingsApi.cancelBooking(selectedBooking.id);
-        alert('Booking cancelled successfully');
+        toast.success('Booking cancelled successfully');
         setShowDetailModal(false);
         loadBookings(); // Reload bookings
       } catch (err) {
         console.error('Error cancelling booking:', err);
-        alert('Failed to cancel booking. Please try again.');
+        toast.error('Failed to cancel booking. Please try again.');
       }
     }
   };
@@ -396,7 +389,8 @@ const BookingManagement = () => {
         <Subtitle>Manage service bookings and create work orders</Subtitle>
       </Header>
 
-      <StatsGrid>
+      <ContentWrapper>
+        <StatsGrid>
         <StatCard>
           <StatInfo>
             <StatLabel>Total Bookings</StatLabel>
@@ -521,10 +515,16 @@ const BookingManagement = () => {
                           <span>Confirm</span>
                         </ActionButton>
                       )}
-                      {booking.status !== 'CANCELLED' && booking.status !== 'COMPLETED' && (
+                      {booking.status === 'CONFIRMED' && !booking.work_order_id && (
                         <ActionButton color="#f59e0b" onClick={() => handleCreateWorkOrder(booking)}>
                           <FaWrench />
                           <span>Work Order</span>
+                        </ActionButton>
+                      )}
+                      {booking.work_order_id && (
+                        <ActionButton color="#10b981" style={{ cursor: 'default', opacity: 0.7 }}>
+                          <FaCheckCircle />
+                          <span>WO #{booking.work_order_id}</span>
                         </ActionButton>
                       )}
                       {booking.status !== 'CANCELLED' && booking.status !== 'COMPLETED' && (
@@ -547,8 +547,14 @@ const BookingManagement = () => {
           booking={selectedBooking}
           onClose={() => setShowDetailModal(false)}
           onCreateWorkOrder={() => {
-            setShowDetailModal(false);
-            setShowCreateWOModal(true);
+            if (selectedBooking.work_order_id) {
+              toast.info(`Work order #${selectedBooking.work_order_id} already exists for this booking`);
+            } else if (selectedBooking.status === 'CONFIRMED') {
+              setShowDetailModal(false);
+              setShowCreateWOModal(true);
+            } else {
+              toast.warning('Please confirm the booking first');
+            }
           }}
           onConfirmBooking={handleConfirmBookingFromModal}
           onCancelBooking={handleCancelBookingFromModal}
@@ -556,31 +562,13 @@ const BookingManagement = () => {
       )}
 
       {showCreateWOModal && (
-        <CreateWorkOrderModal
+        <CreateWorkOrderFromBookingModal
           booking={selectedBooking}
           onClose={() => setShowCreateWOModal(false)}
-          onConfirm={handleConfirmCreateWorkOrder}
-          onCreateWorkOrder={() => {
-            setShowDetailModal(false);
-            setShowCreateWOModal(true);
-          }}
-          onCancelBooking={() => {
-            handleCancel(selectedBooking);
-            setShowDetailModal(false);
-          }}
+          onSuccess={handleWorkOrderCreated}
         />
       )}
-
-      {showCreateWOModal && (
-        <CreateWorkOrderModal
-          booking={selectedBooking}
-          onClose={() => setShowCreateWOModal(false)}
-          onConfirm={() => {
-            alert('Work order created (static demo)');
-            setShowCreateWOModal(false);
-          }}
-        />
-      )}
+      </ContentWrapper>
     </PageContainer>
   );
 };

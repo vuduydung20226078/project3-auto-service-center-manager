@@ -62,4 +62,57 @@ exports.delete = async (req, res) => {
     }
 };
 
+// 🔥 Get available technicians for a time slot
+exports.getAvailable = async (req, res) => {
+    const { start, end } = req.query;
+
+    if (!start || !end) {
+        return res.status(400).json({
+            message: 'start and end query parameters are required'
+        });
+    }
+
+    try {
+        const startTime = new Date(start);
+        const endTime = new Date(end);
+
+        if (isNaN(startTime.getTime()) || isNaN(endTime.getTime())) {
+            return res.status(400).json({ message: 'Invalid date format' });
+        }
+
+        const technicians = await techniciansService.getAvailableTechnicians(startTime, endTime);
+        res.json(technicians);
+    } catch (error) {
+        console.error('Error getting available technicians:', error);
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
+};
+
+// 🔥 Get technician schedule
+exports.getSchedule = async (req, res) => {
+    const { id } = req.params;
+    const { from, to } = req.query;
+
+    if (!from || !to) {
+        return res.status(400).json({
+            message: 'from and to query parameters are required'
+        });
+    }
+
+    try {
+        const fromDate = new Date(from);
+        const toDate = new Date(to);
+
+        if (isNaN(fromDate.getTime()) || isNaN(toDate.getTime())) {
+            return res.status(400).json({ message: 'Invalid date format' });
+        }
+
+        const schedule = await techniciansService.getTechnicianSchedule(id, fromDate, toDate);
+        res.json(schedule);
+    } catch (error) {
+        console.error('Error getting technician schedule:', error);
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
+};
+
 module.exports = exports;

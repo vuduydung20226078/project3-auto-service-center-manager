@@ -1,15 +1,42 @@
 const { WorkOrder, WorkOrderItem, Booking, Stock, StockEntry, PartsCatalog, ServicesCatalog, Assignment, User, Vehicle, Technician, Customer, sequelize } = require('../models');
+const techniciansService = require('./techniciansService');
 
-// Tạo work order trực tiếp với items (walk-in customer)
-exports.createWorkOrderWithItems = async ({ vehicle_id, technician_id, status, items, user_id }) => {
+// Tạo work order trực tiếp với items (walk-in customer hoặc from booking)
+exports.createWorkOrderWithItems = async ({ booking_id = null, vehicle_id, technician_id, status, items, user_id, start_time, estimated_duration = 90 }) => {
     return await sequelize.transaction(async (t) => {
+        // VALIDATE: Check technician availability if schedule is provided
+        if (technician_id && start_time) {
+            const startDate = new Date(start_time);
+            const endDate = new Date(startDate.getTime() + estimated_duration * 60000);
+
+            const hasOverlap = await techniciansService.hasOverlappingWorkOrder(
+                technician_id,
+                startDate,
+                endDate
+            );
+
+            if (hasOverlap) {
+                throw new Error('Technician is not available at this time slot');
+            }
+        }
+
+        // Calculate end_time if start_time provided
+        let end_time = null;
+        if (start_time) {
+            const startDate = new Date(start_time);
+            end_time = new Date(startDate.getTime() + estimated_duration * 60000);
+        }
+
         // Tạo work order
         const wo = await WorkOrder.create({
-            booking_id: null,
+            booking_id,
             technician_id: technician_id || null,
             vehicle_id,
             status: status || 'OPEN',
-            total_amount: 0
+            total_amount: 0,
+            start_time: start_time || null,
+            end_time,
+            estimated_duration
         }, { transaction: t });
 
         let totalAmount = 0;
@@ -87,7 +114,15 @@ exports.createWorkOrderFromBooking = async ({ booking_id, technician_id, vehicle
     });
 };
 
-// Cập nhật trạng thái booking thành CONFIRMED
+// Cập nhật trạng thái booking và link work order
+exports.updateBookingWithWorkOrder = async (booking_id, work_order_id, status = 'CONFIRMED') => {
+    await Booking.update(
+        { status, work_order_id },
+        { where: { id: booking_id } }
+    );
+};
+
+// Cập nhật trạng thái booking thành CONFIRMED (legacy)
 exports.updateBookingStatus = async (booking_id, status) => {
     await Booking.update({ status }, { where: { id: booking_id } });
 };
@@ -113,7 +148,7 @@ exports.getWorkOrderById = async (id) => {
                     { model: Customer, attributes: ['id', 'name', 'phone', 'email'] }
                 ]
             },
-            
+
 
         ]
     });

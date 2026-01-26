@@ -238,7 +238,7 @@ const DynamicTable = ({
       case 'date':
         return value ? new Date(value).toLocaleDateString() : '-';
       case 'currency':
-        return typeof value === 'number' ? `$${value.toFixed(2)}` : value;
+        return typeof value === 'number' ? `${parseFloat(value || 0).toFixed(0)} VND` : value;
       
       default:
         return value || '-';

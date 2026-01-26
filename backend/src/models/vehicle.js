@@ -4,6 +4,8 @@ module.exports = (sequelize, DataTypes) => {
         id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
         customer_id: { type: DataTypes.INTEGER, allowNull: false },
         license_plate: { type: DataTypes.STRING(30), allowNull: false },
+        make: { type: DataTypes.STRING(100) },
+        year: { type: DataTypes.INTEGER },
         model: { type: DataTypes.STRING(100) },
         vin: { type: DataTypes.STRING(100) },
         mileage: { type: DataTypes.INTEGER },

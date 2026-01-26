@@ -6,7 +6,8 @@ module.exports = (sequelize, DataTypes) => {
         vehicle_id: { type: DataTypes.INTEGER, allowNull: false },
         scheduled_at: { type: DataTypes.DATE, allowNull: false },
         status: { type: DataTypes.ENUM('PENDING', 'CONFIRMED', 'COMPLETED', 'CANCELLED'), defaultValue: 'PENDING' },
-        notes: { type: DataTypes.TEXT }
+        notes: { type: DataTypes.TEXT },
+        work_order_id: { type: DataTypes.INTEGER, allowNull: true }
     }, {
         tableName: 'bookings',
         underscored: true,
@@ -17,6 +18,7 @@ module.exports = (sequelize, DataTypes) => {
         Booking.belongsTo(models.Customer, { foreignKey: 'customer_id' });
         Booking.belongsTo(models.Vehicle, { foreignKey: 'vehicle_id' });
         Booking.hasOne(models.WorkOrder, { foreignKey: 'booking_id' });
+        Booking.belongsTo(models.WorkOrder, { foreignKey: 'work_order_id', as: 'WorkOrderRef' });
     };
 
     return Booking;

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
-import { FaTimes, FaPlus, FaTrash } from 'react-icons/fa';
+import { FaTimes, FaPlus, FaTrash, FaWrench } from 'react-icons/fa';
 import { workOrdersApi } from '../../api/workOrdersApi';
 import { customersApi } from '../../api/customersApi';
 import { vehiclesApi } from '../../api/vehiclesApi';
@@ -8,6 +8,7 @@ import { techniciansApi } from '../../api/techniciansApi';
 import { servicesApi } from '../../api/servicesApi';
 import { partsApi } from '../../api/partsApi';
 import { calculateTotal, validateWorkOrderForm } from './workOrderHelpers';
+import toast from '../../utils/toast';
 
 // Styled Components
 const Overlay = styled.div`
@@ -39,25 +40,31 @@ const Header = styled.div`
   align-items: center;
   padding: 24px;
   border-bottom: 1px solid #e9ecef;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border-radius: 12px 12px 0 0;
 `;
 
 const Title = styled.h2`
   font-size: 24px;
   font-weight: 700;
-  color: #333;
   margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
 `;
 
 const CloseButton = styled.button`
   background: none;
   border: none;
   font-size: 24px;
-  color: #999;
+  color: white;
   cursor: pointer;
   padding: 0;
+  opacity: 0.9;
   
   &:hover {
-    color: #333;
+    opacity: 1;
   }
 `;
 
@@ -159,33 +166,14 @@ const RemoveButton = styled.button`
   }
 `;
 
-const TotalSection = styled.div`
-  background-color: #f8f9fa;
-  padding: 16px;
-  border-radius: 8px;
-  margin-top: 20px;
-  text-align: right;
-`;
-
-const TotalLabel = styled.span`
-  font-size: 18px;
-  font-weight: 600;
-  color: #333;
-  margin-right: 12px;
-`;
-
-const TotalValue = styled.span`
-  font-size: 24px;
-  font-weight: 700;
-  color: #2563eb;
-`;
-
 const Footer = styled.div`
   display: flex;
   justify-content: flex-end;
   gap: 12px;
   padding: 24px;
   border-top: 1px solid #e9ecef;
+  background: #f8f9fa;
+  border-radius: 0 0 12px 12px;
 `;
 
 const Button = styled.button`
@@ -208,16 +196,18 @@ const CancelButton = styled(Button)`
 `;
 
 const SubmitButton = styled(Button)`
-  background-color: #2563eb;
+  background: linear-gradient(135deg, #667eea, #764ba2);
   color: white;
   
   &:hover {
-    background-color: #1d4ed8;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
   }
   
   &:disabled {
-    background-color: #cbd5e1;
+    background: #cbd5e1;
     cursor: not-allowed;
+    transform: none;
   }
 `;
 
@@ -247,6 +237,50 @@ const RadioLabel = styled.label`
   }
 `;
 
+const TotalSectionGradient = styled.div`
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 20px;
+  border-radius: 8px;
+  margin-top: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: white;
+`;
+
+const TotalLabel = styled.span`
+  font-size: 18px;
+  font-weight: 600;
+`;
+
+const TotalValue = styled.span`
+  font-size: 28px;
+  font-weight: 700;
+`;
+
+const ItemsTable = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 16px;
+`;
+
+const Textarea = styled.textarea`
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 14px;
+  font-family: inherit;
+  resize: vertical;
+  min-height: 80px;
+  
+  &:focus {
+    outline: none;
+    border-color: #2563eb;
+  }
+`;
+
 const WorkOrderForm = ({ workOrder, onClose, onSuccess }) => {
   // State
   const [customerType, setCustomerType] = useState('existing');
@@ -256,7 +290,9 @@ const WorkOrderForm = ({ workOrder, onClose, onSuccess }) => {
     customer_id: '',
     vehicle_id: '',
     technician_id: '',
-    status: 'OPEN'
+    status: 'OPEN',
+    start_time: '',
+    estimated_duration: 90
   });
   
   const [newCustomer, setNewCustomer] = useState({
@@ -358,33 +394,66 @@ const WorkOrderForm = ({ workOrder, onClose, onSuccess }) => {
     }
   };
 
+  // Calculate and auto-set duration from services
+  const calculateAndSetDuration = (selectedServices) => {
+    let totalDuration = 0;
+    selectedServices.forEach(service => {
+      if (service.service_id) {
+        // Find the service from the catalog (servicesList state)
+        const catalogService = servicesList.find(s => s.id === parseInt(service.service_id));
+        if (catalogService && catalogService.duration_minutes) {
+          // Services don't have quantity, each service is added once
+          totalDuration += catalogService.duration_minutes;
+        }
+      }
+    });
+    
+    // Set to calculated duration or keep current if no services
+    if (totalDuration > 0) {
+      setFormData(prev => ({ ...prev, estimated_duration: totalDuration }));
+    }
+  };
+
   // Service Management
   const addService = () => {
-    setServices([...services, { service_id: '', quantity: 1, price: 0 }]);
+    setServices([...services, { service_id: '', price: 0, description: '' }]);
   };
 
   const removeService = (index) => {
-    setServices(services.filter((_, i) => i !== index));
+    const newServices = services.filter((_, i) => i !== index);
+    setServices(newServices);
+    calculateAndSetDuration(newServices);
   };
 
   const updateService = (index, field, value) => {
     const updated = [...services];
-    updated[index][field] = value;
     
-    // Auto-fill price when service is selected
+    // Check for duplicate service when selecting
     if (field === 'service_id' && value) {
+      const isDuplicate = services.some((s, i) => i !== index && s.service_id === value);
+      if (isDuplicate) {
+        toast.error('This service has already been added');
+        return;
+      }
+      
       const selectedService = servicesList.find(s => s.id === parseInt(value));
       if (selectedService) {
         updated[index].price = selectedService.price || 0;
       }
     }
     
+    updated[index][field] = value;
     setServices(updated);
+    
+    // Recalculate duration when service changes
+    if (field === 'service_id') {
+      calculateAndSetDuration(updated);
+    }
   };
 
   // Part Management
   const addPart = () => {
-    setParts([...parts, { part_id: '', quantity: 1, price: 0 }]);
+    setParts([...parts, { part_id: '', quantity: 1, price: 0, description: '' }]);
   };
 
   const removePart = (index) => {
@@ -448,10 +517,12 @@ const WorkOrderForm = ({ workOrder, onClose, onSuccess }) => {
         vehicle_id: vehicleId,
         technician_id: formData.technician_id || null,
         status: formData.status,
+        start_time: formData.start_time || null,
+        estimated_duration: formData.estimated_duration || null,
         items: [
           ...services.map(s => ({ 
             service_id: s.service_id, 
-            quantity: s.quantity, 
+            quantity: 1, // Services always have quantity 1
             price: s.price, 
             description: s.description || '',
             type: 'service' 
@@ -475,7 +546,7 @@ const WorkOrderForm = ({ workOrder, onClose, onSuccess }) => {
       onSuccess();
     } catch (error) {
       console.error('Error saving work order:', error);
-      alert('Error saving work order. Please try again.');
+      toast.error('Error saving work order. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -485,7 +556,9 @@ const WorkOrderForm = ({ workOrder, onClose, onSuccess }) => {
     <Overlay onClick={onClose}>
       <Modal onClick={(e) => e.stopPropagation()}>
         <Header>
-          <Title>{workOrder ? 'Edit Work Order' : 'New Work Order'}</Title>
+          <Title>
+            <FaWrench /> {workOrder ? 'Edit Work Order' : 'New Work Order'}
+          </Title>
           <CloseButton onClick={onClose}>
             <FaTimes />
           </CloseButton>
@@ -661,6 +734,7 @@ const WorkOrderForm = ({ workOrder, onClose, onSuccess }) => {
             )}
 
             {/* Work Order Details */}
+            <SectionTitle>Work Order Details</SectionTitle>
             <FormGroup>
               <Label>Assign Technician</Label>
               <Select
@@ -676,43 +750,74 @@ const WorkOrderForm = ({ workOrder, onClose, onSuccess }) => {
               </Select>
             </FormGroup>
 
+            <Grid>
+              <FormGroup>
+                <Label>Start Time</Label>
+                <Input
+                  type="datetime-local"
+                  value={formData.start_time}
+                  onChange={(e) => setFormData({...formData, start_time: e.target.value})}
+                />
+              </FormGroup>
+              <FormGroup>
+                <Label>Estimated Duration (minutes)</Label>
+                <Input
+                  type="number"
+                  min="15"
+                  step="15"
+                  value={formData.estimated_duration}
+                  onChange={(e) => setFormData({...formData, estimated_duration: parseInt(e.target.value) || 90})}
+                  placeholder="90"
+                />
+                <div style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
+                  {services.length > 0 && services.some(s => s.service_id) 
+                    ? 'Auto-calculated from selected services' 
+                    : 'Will be calculated automatically when services are selected'}
+                </div>
+              </FormGroup>
+            </Grid>
+
             {/* Services Section */}
             <SectionTitle>Services</SectionTitle>
             <AddButton type="button" onClick={addService}>
               <FaPlus /> Add Service
             </AddButton>
             {services.map((service, index) => (
-              <ItemRow key={index}>
-                <Select
-                  value={service.service_id}
-                  onChange={(e) => updateService(index, 'service_id', e.target.value)}
-                >
-                  <option value="">Select service</option>
-                  {servicesList.map(s => (
-                    <option key={s.id} value={s.id}>
-                      {s.name} - ${s.price}
-                    </option>
-                  ))}
-                </Select>
-                <Input
-                  type="number"
-                  placeholder="Qty"
-                  value={service.quantity}
-                  onChange={(e) => updateService(index, 'quantity', e.target.value)}
-                  min="1"
-                />
-                <Input
-                  type="number"
-                  placeholder="Price"
-                  value={service.price}
-                  onChange={(e) => updateService(index, 'price', e.target.value)}
-                  min="0"
-                  step="0.01"
-                />
-                <RemoveButton type="button" onClick={() => removeService(index)}>
-                  <FaTrash />
-                </RemoveButton>
-              </ItemRow>
+              <div key={index} style={{ marginBottom: '16px' }}>
+                <ItemRow>
+                  <Select
+                    value={service.service_id}
+                    onChange={(e) => updateService(index, 'service_id', e.target.value)}
+                    style={{ flex: 2 }}
+                  >
+                    <option value="">Select service</option>
+                    {servicesList.map(s => (
+                      <option key={s.id} value={s.id}>
+                        {s.name} - {parseFloat(s.price || 0).toFixed(0)} VND
+                      </option>
+                    ))}
+                  </Select>
+                  <Input
+                    type="number"
+                    placeholder="Price"
+                    value={service.price}
+                    onChange={(e) => updateService(index, 'price', e.target.value)}
+                    min="0"
+                    step="0.01"
+                    style={{ width: '120px' }}
+                  />
+                  <RemoveButton type="button" onClick={() => removeService(index)}>
+                    <FaTrash />
+                  </RemoveButton>
+                </ItemRow>
+                <FormGroup style={{ marginTop: '8px' }}>
+                  <Textarea
+                    placeholder="Description (optional)"
+                    value={service.description || ''}
+                    onChange={(e) => updateService(index, 'description', e.target.value)}
+                  />
+                </FormGroup>
+              </div>
             ))}
 
             {/* Parts Section */}
@@ -721,44 +826,62 @@ const WorkOrderForm = ({ workOrder, onClose, onSuccess }) => {
               <FaPlus /> Add Part
             </AddButton>
             {parts.map((part, index) => (
-              <ItemRow key={index}>
-                <Select
-                  value={part.part_id}
-                  onChange={(e) => updatePart(index, 'part_id', e.target.value)}
-                >
-                  <option value="">Select part</option>
-                  {partsList.map(p => (
-                    <option key={p.id} value={p.id}>
-                      {p.name} ({p.sku}) - ${p.unit_price}
-                    </option>
-                  ))}
-                </Select>
-                <Input
-                  type="number"
-                  placeholder="Qty"
-                  value={part.quantity}
-                  onChange={(e) => updatePart(index, 'quantity', e.target.value)}
-                  min="1"
-                />
-                <Input
-                  type="number"
-                  placeholder="Price"
-                  value={part.price}
-                  onChange={(e) => updatePart(index, 'price', e.target.value)}
-                  min="0"
-                  step="0.01"
-                />
-                <RemoveButton type="button" onClick={() => removePart(index)}>
-                  <FaTrash />
-                </RemoveButton>
-              </ItemRow>
+              <div key={index} style={{ marginBottom: '16px' }}>
+                <ItemRow>
+                  <Select
+                    value={part.part_id}
+                    onChange={(e) => updatePart(index, 'part_id', e.target.value)}
+                  >
+                    <option value="">Select part</option>
+                    {partsList.map(p => (
+                      <option key={p.id} value={p.id}>
+                        {p.name} ({p.sku}) - {parseFloat(p.unit_price || 0).toFixed(0)} VND
+                      </option>
+                    ))}
+                  </Select>
+                  <Input
+                    type="number"
+                    placeholder="Qty"
+                    value={part.quantity}
+                    onChange={(e) => updatePart(index, 'quantity', e.target.value)}
+                    min="1"
+                    style={{ width: '80px' }}
+                  />
+                  <Input
+                    type="number"
+                    placeholder="Price"
+                    value={part.price}
+                    onChange={(e) => updatePart(index, 'price', e.target.value)}
+                    min="0"
+                    step="0.01"
+                    style={{ width: '120px' }}
+                  />
+                  <Input
+                    type="text"
+                    placeholder="Subtotal"
+                    value={`${((parseFloat(part.price) || 0) * (parseInt(part.quantity) || 1)).toFixed(0)} VND`}
+                    disabled
+                    style={{ width: '120px', background: '#f0f0f0' }}
+                  />
+                  <RemoveButton type="button" onClick={() => removePart(index)}>
+                    <FaTrash />
+                  </RemoveButton>
+                </ItemRow>
+                <FormGroup style={{ marginTop: '8px' }}>
+                  <Textarea
+                    placeholder="Description (optional)"
+                    value={part.description || ''}
+                    onChange={(e) => updatePart(index, 'description', e.target.value)}
+                  />
+                </FormGroup>
+              </div>
             ))}
 
             {/* Total */}
-            <TotalSection>
+            <TotalSectionGradient>
               <TotalLabel>Total Estimated Cost:</TotalLabel>
-              <TotalValue>${calculateTotal(services, parts).toFixed(2)}</TotalValue>
-            </TotalSection>
+              <TotalValue>{parseFloat(calculateTotal(services, parts) || 0).toFixed(0)} VND</TotalValue>
+            </TotalSectionGradient>
           </Body>
 
           <Footer>
@@ -766,6 +889,7 @@ const WorkOrderForm = ({ workOrder, onClose, onSuccess }) => {
               Cancel
             </CancelButton>
             <SubmitButton type="submit" disabled={loading}>
+              <FaWrench />
               {loading ? 'Saving...' : workOrder ? 'Update' : 'Create'}
             </SubmitButton>
           </Footer>

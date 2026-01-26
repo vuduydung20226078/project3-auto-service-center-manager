@@ -6,7 +6,10 @@ module.exports = (sequelize, DataTypes) => {
         technician_id: { type: DataTypes.INTEGER },
         vehicle_id: { type: DataTypes.INTEGER },
         status: { type: DataTypes.ENUM('OPEN', 'IN_PROGRESS', 'WAITING_PARTS', 'COMPLETED', 'CLOSED'), defaultValue: 'OPEN' },
-        total_amount: { type: DataTypes.DECIMAL(12, 2), defaultValue: 0.00 }
+        total_amount: { type: DataTypes.DECIMAL(12, 2), defaultValue: 0.00 },
+        start_time: { type: DataTypes.DATE },
+        end_time: { type: DataTypes.DATE },
+        estimated_duration: { type: DataTypes.INTEGER }
     }, {
         tableName: 'work_orders',
         underscored: true,

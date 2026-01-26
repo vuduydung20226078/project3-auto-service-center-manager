@@ -38,6 +38,23 @@ export const createBooking = async (bookingData) => {
     }
 };
 
+// Create customer booking (smart endpoint - finds or creates customer & vehicle)
+export const createCustomerBooking = async ({ customerData, vehicleData, scheduled_at, notes, selectedServices }) => {
+    try {
+        const response = await api.post('/bookings/customer-booking', {
+            customerData,
+            vehicleData,
+            scheduled_at,
+            notes,
+            selectedServices
+        });
+        return response.data;
+    } catch (error) {
+        console.error('Error creating customer booking:', error);
+        throw error;
+    }
+};
+
 // Confirm booking
 export const confirmBooking = async (id) => {
     try {

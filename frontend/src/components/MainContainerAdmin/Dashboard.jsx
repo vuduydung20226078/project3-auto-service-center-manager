@@ -27,15 +27,10 @@ import StatCard from '../common/StatCard';
 import { dashboardApi } from '../../api/dashboardApi';
 
 const PageContainer = styled.div`
-  /* Keep equal space on both sides to balance with the left sidebar */
-  margin: 30px 280px;
+  margin-left: 280px;
   padding: 30px;
   min-height: 100vh;
-  width: calc(100% - 560px);
   background-color: #f9f9f9;
-  box-sizing: border-box;
-  align-items: center;
-  padding-left: 100px;
 `;
 
 const Header = styled.div`
@@ -54,6 +49,13 @@ const Subtitle = styled.p`
   font-size: 14px;
   color: #999;
   margin: 0;
+`;
+
+const ContentWrapper = styled.div`
+  background-color: white;
+  border-radius: 12px;
+  padding: 30px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 `;
 
 const StatsGrid = styled.div`
@@ -230,6 +232,7 @@ const Dashboard = () => {
         <Subtitle>Overview of your auto service center</Subtitle>
       </Header>
 
+      <ContentWrapper>
       {error && <ErrorMsg>{error}</ErrorMsg>}
 
       <StatsGrid>
@@ -395,6 +398,7 @@ const Dashboard = () => {
           </Table>
         </TableContainer>
       </Card>
+      </ContentWrapper>
     </PageContainer>
   );
 };
