@@ -1,4 +1,4 @@
-const { Invoice, Payment, WorkOrder, Vehicle, Customer, WorkOrderItem, ServicesCatalog, PartsCatalog, User, sequelize } = require('../models');
+const { Invoice, Payment, WorkOrder, Vehicle, Customer, WorkOrderItem, Service, Part, User, sequelize } = require('../models');
 
 // Lấy danh sách work orders đã hoàn thành (chưa có invoice)
 exports.getCompletedWorkOrders = async () => {
@@ -59,12 +59,12 @@ exports.getWorkOrderForInvoice = async (workOrderId) => {
         workOrder.WorkOrderItems.map(async (item) => {
             let itemDetails = null;
             if (item.item_type === 'SERVICE') {
-                itemDetails = await ServicesCatalog.findByPk(item.item_id, {
-                    attributes: ['id', 'name', 'price', 'estimated_duration']
+                itemDetails = await Service.findByPk(item.item_id, {
+                    attributes: ['id', 'name', 'price', 'duration_minutes']
                 });
             } else if (item.item_type === 'PART') {
-                itemDetails = await PartsCatalog.findByPk(item.item_id, {
-                    attributes: ['id', 'name', 'price']
+                itemDetails = await Part.findByPk(item.item_id, {
+                    attributes: ['id', 'name', 'unit_price']
                 });
             }
             return {

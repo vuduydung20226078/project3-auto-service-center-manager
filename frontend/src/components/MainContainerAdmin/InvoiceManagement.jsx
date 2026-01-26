@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
+import { useNavigate } from 'react-router-dom';
 import { FaFileInvoiceDollar, FaEye, FaEdit, FaTrash, FaPlus, FaSearch, FaDollarSign, FaCheckCircle, FaClock } from 'react-icons/fa';
 import { invoicesApi } from '../../api/invoicesApi';
 import InvoiceDetailModal from '../Invoice/InvoiceDetailModal';
+import SelectWorkOrderModal from '../Invoice/SelectWorkOrderModal';
+import CreateInvoiceModal from '../Invoice/CreateInvoiceModal';
 import toast from '../../utils/toast';
 
 const PageContainer = styled.div`
@@ -266,12 +269,16 @@ const LoadingState = styled.div`
 `;
 
 const InvoiceManagement = () => {
+  const navigate = useNavigate();
   const [invoices, setInvoices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [selectedInvoice, setSelectedInvoice] = useState(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
+  const [showSelectWorkOrderModal, setShowSelectWorkOrderModal] = useState(false);
+  const [showCreateInvoiceModal, setShowCreateInvoiceModal] = useState(false);
+  const [selectedWorkOrder, setSelectedWorkOrder] = useState(null);
   const [stats, setStats] = useState({
     total: 0,
     totalRevenue: 0,
@@ -298,6 +305,19 @@ const InvoiceManagement = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleSelectWorkOrder = (workOrder) => {
+    setSelectedWorkOrder(workOrder);
+    setShowSelectWorkOrderModal(false);
+    setShowCreateInvoiceModal(true);
+  };
+
+  const handleInvoiceSuccess = (invoice, workOrderDetails) => {
+    setShowCreateInvoiceModal(false);
+    loadInvoices();
+    // Navigate to payment page
+    navigate('/payment', { state: { invoice, workOrderDetails } });
   };
 
   const calculateStats = (data) => {
@@ -417,7 +437,7 @@ const InvoiceManagement = () => {
             <option value="PARTIALLY_PAID">Partially Paid</option>
             <option value="UNPAID">Unpaid</option>
           </FilterSelect>
-          <AddButton onClick={() => toast.info('Create invoice from work order')}>
+          <AddButton onClick={() => setShowSelectWorkOrderModal(true)}>
             <FaPlus /> New Invoice
           </AddButton>
         </Controls>
@@ -479,6 +499,24 @@ const InvoiceManagement = () => {
             setSelectedInvoice(null);
           }}
           onUpdate={loadInvoices}
+        />
+      )}
+
+      {showSelectWorkOrderModal && (
+        <SelectWorkOrderModal
+          onClose={() => setShowSelectWorkOrderModal(false)}
+          onSelect={handleSelectWorkOrder}
+        />
+      )}
+
+      {showCreateInvoiceModal && selectedWorkOrder && (
+        <CreateInvoiceModal
+          workOrder={selectedWorkOrder}
+          onClose={() => {
+            setShowCreateInvoiceModal(false);
+            setSelectedWorkOrder(null);
+          }}
+          onSuccess={handleInvoiceSuccess}
         />
       )}
     </PageContainer>

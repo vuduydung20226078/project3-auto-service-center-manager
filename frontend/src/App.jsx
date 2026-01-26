@@ -4,6 +4,7 @@ import AdminDashboard from './pages/ManagementPageAdmin';
 import CustomerDashboard from './pages/CustomerDashboard';
 import CustomerBookingPage from './pages/CustomerBookingPage';
 import TechnicianPortal from './pages/TechnicianPortal';
+import PaymentPage from './pages/PaymentPage';
 import './App.css';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './contexts/AuthContext';
@@ -40,6 +41,16 @@ function App() {
           element={
             isAuthenticated && user?.role !== 'Customer'
               ? <AdminDashboard /> 
+              : <Navigate to="/" />
+          } 
+        />
+
+        {/* Payment Page - accessible after invoice creation */}
+        <Route 
+          path="/payment" 
+          element={
+            isAuthenticated && user?.role !== 'Customer'
+              ? <PaymentPage /> 
               : <Navigate to="/" />
           } 
         />

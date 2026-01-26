@@ -47,5 +47,17 @@ export const invoicesApi = {
     getPayments: async (invoiceId) => {
         const response = await api.get(`/billing/invoices/${invoiceId}/payments`);
         return response.data;
+    },
+
+    // Get completed work orders without invoice
+    getCompletedWorkOrders: async () => {
+        const response = await api.get('/billing/completed-work-orders');
+        return response.data;
+    },
+
+    // Get work order details for invoice creation
+    getWorkOrderDetails: async (workOrderId) => {
+        const response = await api.get(`/billing/work-orders/${workOrderId}/details`);
+        return response.data;
     }
 };
