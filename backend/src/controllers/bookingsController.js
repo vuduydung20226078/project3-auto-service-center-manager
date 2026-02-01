@@ -4,6 +4,7 @@
  */
 const bookingOrchestrator = require('../orchestrators/booking.orchestrator');
 const bookingsRepo = require('../repositories/bookings.repo');
+const bookingsService = require('../services/bookings.service');
 
 /**
  * Create booking for authenticated user
@@ -107,19 +108,19 @@ exports.list = async (req, res) => {
  */
 exports.getById = async (req, res) => {
     try {
-        const booking = await bookingsRepo.findById(req.params.id);
-
-        if (!booking) {
-            return res.status(404).json({ message: 'Booking not found' });
-        }
-
-        // Verify ownership for Customer role
-        if (req.customerId && booking.customer_id !== req.customerId) {
-            return res.status(403).json({ message: 'You can only access your own bookings' });
-        }
+        const booking = await bookingsService.getBookingDetails(
+            req.params.id,
+            req.customerId // Will be set by attachCustomer middleware for Customer role
+        );
 
         res.json(booking);
     } catch (error) {
+        if (error.message.includes('not found')) {
+            return res.status(404).json({ message: error.message });
+        }
+        if (error.message.includes('You can only access')) {
+            return res.status(403).json({ message: error.message });
+        }
         res.status(500).json({ message: 'Server error', error: error.message });
     }
 };

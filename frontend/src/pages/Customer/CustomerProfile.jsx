@@ -247,6 +247,81 @@ const Version = styled.div`
   color: #999;
 `;
 
+const ModalOverlay = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+`;
+
+const ModalContent = styled.div`
+  background: white;
+  border-radius: 16px;
+  padding: 24px;
+  width: 90%;
+  max-width: 400px;
+`;
+
+const ModalTitle = styled.h3`
+  font-size: 20px;
+  font-weight: 700;
+  color: #333;
+  margin-bottom: 20px;
+`;
+
+const ModalInput = styled.input`
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 14px;
+  margin-bottom: 16px;
+  
+  &:focus {
+    outline: none;
+    border-color: #2563eb;
+  }
+`;
+
+const ModalButtons = styled.div`
+  display: flex;
+  gap: 12px;
+  margin-top: 24px;
+`;
+
+const ModalButton = styled.button`
+  flex: 1;
+  padding: 12px;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  
+  ${props => props.$primary ? `
+    background: #2563eb;
+    color: white;
+    
+    &:hover {
+      background: #1d4ed8;
+    }
+  ` : `
+    background: #f3f4f6;
+    color: #333;
+    
+    &:hover {
+      background: #e5e7eb;
+    }
+  `}
+`;
+
 const CustomerProfile = () => {
   const navigate = useNavigate();
   const { user, logout: contextLogout } = useAuth();
@@ -261,6 +336,12 @@ const CustomerProfile = () => {
   const [tempValue, setTempValue] = useState('');
   const [emailNotifications, setEmailNotifications] = useState(true);
   const [smsNotifications, setSmsNotifications] = useState(true);
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [passwordData, setPasswordData] = useState({
+    oldPassword: '',
+    newPassword: '',
+    confirmPassword: ''
+  });
 
   const getUserInitials = () => {
     const name = profile.name || user?.username || user?.email;
@@ -281,6 +362,25 @@ const CustomerProfile = () => {
       name: user?.username || prev.name,
       email: user?.email || prev.email
     }));
+
+    // If user is a Customer, fetch customer profile to get full_name
+    (async () => {
+      try {
+        if (user && (user.role === 'Customer' || (user.role && user.role.toLowerCase && user.role.toLowerCase() === 'customer'))) {
+          const res = await api.get('/customers/me');
+          const c = res.data;
+          setProfile(prev => ({
+            ...prev,
+            name: c.name || prev.name,
+            email: c.email || prev.email,
+            phone: c.phone || prev.phone,
+            address: c.address || prev.address
+          }));
+        }
+      } catch (err) {
+        // ignore
+      }
+    })();
   }, [user]);
 
   const startEdit = (fieldKey) => {
@@ -288,12 +388,14 @@ const CustomerProfile = () => {
     setTempValue(profile[fieldKey] || '');
   };
 
-  const cancelEdit = () => {
+  const cancelEdit = (e) => {
+    if (e) e.stopPropagation();
     setEditingField(null);
     setTempValue('');
   };
 
-  const saveField = async (fieldKey) => {
+  const saveField = async (fieldKey, e) => {
+    if (e) e.stopPropagation();
     try {
       const payload = {};
       payload[fieldKey] = tempValue;
@@ -313,7 +415,49 @@ const CustomerProfile = () => {
   };
 
   const handleChangePassword = () => {
-    toast.info('Change password feature coming soon!');
+    setShowPasswordModal(true);
+  };
+
+  const handlePasswordChange = (field, value) => {
+    setPasswordData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const submitPasswordChange = async () => {
+    try {
+      const { oldPassword, newPassword, confirmPassword } = passwordData;
+      
+      if (!oldPassword || !newPassword || !confirmPassword) {
+        toast.error('Please fill all fields');
+        return;
+      }
+      
+      if (newPassword !== confirmPassword) {
+        toast.error('New passwords do not match');
+        return;
+      }
+      
+      if (newPassword.length < 6) {
+        toast.error('New password must be at least 6 characters');
+        return;
+      }
+
+      await api.patch('/users/change-password', {
+        oldPassword,
+        newPassword
+      });
+      
+      toast.success('Password changed successfully');
+      setShowPasswordModal(false);
+      setPasswordData({ oldPassword: '', newPassword: '', confirmPassword: '' });
+    } catch (err) {
+      console.error('Failed to change password', err);
+      toast.error(err.response?.data?.message || 'Failed to change password');
+    }
+  };
+
+  const cancelPasswordChange = () => {
+    setShowPasswordModal(false);
+    setPasswordData({ oldPassword: '', newPassword: '', confirmPassword: '' });
   };
 
   const handleEditProfile = () => {
@@ -361,7 +505,7 @@ const CustomerProfile = () => {
               {editingField === 'name' ? (
                 <div>
                   <Input value={tempValue} onChange={(e) => setTempValue(e.target.value)} />
-                  <SaveButton onClick={() => saveField('name')}>Save</SaveButton>
+                  <SaveButton onClick={(e) => saveField('name', e)}>Save</SaveButton>
                   <CancelButton onClick={cancelEdit}>Cancel</CancelButton>
                 </div>
               ) : (
@@ -385,7 +529,7 @@ const CustomerProfile = () => {
               {editingField === 'phone' ? (
                 <div>
                   <Input value={tempValue} onChange={(e) => setTempValue(e.target.value)} />
-                  <SaveButton onClick={() => saveField('phone')}>Save</SaveButton>
+                  <SaveButton onClick={(e) => saveField('phone', e)}>Save</SaveButton>
                   <CancelButton onClick={cancelEdit}>Cancel</CancelButton>
                 </div>
               ) : (
@@ -401,7 +545,7 @@ const CustomerProfile = () => {
               {editingField === 'address' ? (
                 <div>
                   <Input value={tempValue} onChange={(e) => setTempValue(e.target.value)} />
-                  <SaveButton onClick={() => saveField('address')}>Save</SaveButton>
+                  <SaveButton onClick={(e) => saveField('address', e)}>Save</SaveButton>
                   <CancelButton onClick={cancelEdit}>Cancel</CancelButton>
                 </div>
               ) : (
@@ -449,6 +593,40 @@ const CustomerProfile = () => {
 
         <Version>AutoCare v1.0.3</Version>
       </Content>
+
+      {showPasswordModal && (
+        <ModalOverlay onClick={cancelPasswordChange}>
+          <ModalContent onClick={(e) => e.stopPropagation()}>
+            <ModalTitle>Change Password</ModalTitle>
+            
+            <ModalInput
+              type="password"
+              placeholder="Old Password"
+              value={passwordData.oldPassword}
+              onChange={(e) => handlePasswordChange('oldPassword', e.target.value)}
+            />
+            
+            <ModalInput
+              type="password"
+              placeholder="New Password"
+              value={passwordData.newPassword}
+              onChange={(e) => handlePasswordChange('newPassword', e.target.value)}
+            />
+            
+            <ModalInput
+              type="password"
+              placeholder="Confirm New Password"
+              value={passwordData.confirmPassword}
+              onChange={(e) => handlePasswordChange('confirmPassword', e.target.value)}
+            />
+            
+            <ModalButtons>
+              <ModalButton onClick={cancelPasswordChange}>Cancel</ModalButton>
+              <ModalButton $primary onClick={submitPasswordChange}>Change Password</ModalButton>
+            </ModalButtons>
+          </ModalContent>
+        </ModalOverlay>
+      )}
     </Container>
   );
 };

@@ -2,7 +2,7 @@
  * Vehicles Repository
  * Isolates Sequelize queries from service layer
  */
-const { Vehicle, Customer } = require('../models');
+const { Vehicle, Customer, WorkOrder, WorkOrderItem, Service, Part, Booking } = require('../models');
 
 class VehiclesRepository {
     /**
@@ -89,6 +89,57 @@ class VehiclesRepository {
         });
 
         return { vehicle, created };
+    }
+
+    /**
+     * Get service history for a vehicle
+     * Returns completed work orders with service items
+     */
+    async getServiceHistory(vehicleId) {
+        const workOrders = await WorkOrder.findAll({
+            where: {
+                vehicle_id: vehicleId,
+                status: ['COMPLETED']
+            },
+            include: [
+                {
+                    model: Booking,
+                    attributes: ['id', 'scheduled_at', 'status']
+                },
+                {
+                    model: WorkOrderItem,
+                    where: { item_type: 'SERVICE' },
+                    required: false,
+                    include: [
+                        {
+                            model: Service,
+                            as: 'service',
+                            attributes: ['id', 'name', 'code']
+                        }
+                    ]
+                }
+            ],
+            order: [['end_time', 'DESC'], ['created_at', 'DESC']]
+        });
+
+        // Transform to service history format
+        const serviceHistory = [];
+
+        workOrders.forEach(wo => {
+            wo.WorkOrderItems?.forEach(item => {
+                serviceHistory.push({
+                    id: item.id,
+                    service_name: item.service?.name || item.description || 'Unknown Service',
+                    service_code: item.service?.code || null,
+                    date: wo.end_time || wo.updated_at || wo.created_at,
+                    price: parseFloat(item.line_total || 0),
+                    work_order_id: wo.id,
+                    booking_id: wo.booking_id
+                });
+            });
+        });
+
+        return serviceHistory;
     }
 }
 

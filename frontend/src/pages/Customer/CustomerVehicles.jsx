@@ -195,10 +195,124 @@ const EmptyState = styled.div`
   color: #666;
 `;
 
+const ModalOverlay = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+`;
+
+const ModalContent = styled.div`
+  background: white;
+  border-radius: 16px;
+  padding: 24px;
+  width: 100%;
+  max-width: 500px;
+  max-height: 90vh;
+  overflow-y: auto;
+`;
+
+const ModalTitle = styled.h3`
+  font-size: 20px;
+  font-weight: 700;
+  color: #333;
+  margin-bottom: 20px;
+`;
+
+const FormGroup = styled.div`
+  margin-bottom: 16px;
+`;
+
+const Label = styled.label`
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 8px;
+`;
+
+const Input = styled.input`
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 14px;
+  
+  &:focus {
+    outline: none;
+    border-color: #2563eb;
+  }
+`;
+
+const TextArea = styled.textarea`
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 14px;
+  resize: vertical;
+  min-height: 80px;
+  
+  &:focus {
+    outline: none;
+    border-color: #2563eb;
+  }
+`;
+
+const ModalButtons = styled.div`
+  display: flex;
+  gap: 12px;
+  margin-top: 24px;
+`;
+
+const ModalButton = styled.button`
+  flex: 1;
+  padding: 12px;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  
+  ${props => props.$primary ? `
+    background: #2563eb;
+    color: white;
+    
+    &:hover {
+      background: #1d4ed8;
+    }
+  ` : `
+    background: #f3f4f6;
+    color: #333;
+    
+    &:hover {
+      background: #e5e7eb;
+    }
+  `}
+`;
+
 const CustomerVehicles = () => {
   const navigate = useNavigate();
   const [vehicles, setVehicles] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [newVehicle, setNewVehicle] = useState({
+    license_plate: '',
+    make: '',
+    model: '',
+    year: '',
+    vin: '',
+    mileage: '',
+    note: ''
+  });
 
   useEffect(() => {
     fetchVehicles();
@@ -217,11 +331,64 @@ const CustomerVehicles = () => {
   };
 
   const handleAddVehicle = () => {
-    toast.info('Add vehicle feature coming soon!');
+    setShowAddModal(true);
+  };
+
+  const handleVehicleInputChange = (field, value) => {
+    setNewVehicle(prev => ({ ...prev, [field]: value }));
+  };
+
+  const submitAddVehicle = async () => {
+    try {
+      if (!newVehicle.license_plate || !newVehicle.license_plate.trim()) {
+        toast.error('License plate is required');
+        return;
+      }
+
+      const vehicleData = {
+        license_plate: newVehicle.license_plate.trim(),
+        make: newVehicle.make.trim() || null,
+        model: newVehicle.model.trim() || null,
+        year: newVehicle.year ? parseInt(newVehicle.year) : null,
+        vin: newVehicle.vin.trim() || null,
+        mileage: newVehicle.mileage ? parseInt(newVehicle.mileage) : null,
+        note: newVehicle.note.trim() || null
+      };
+
+      await vehiclesApi.create(vehicleData);
+      toast.success('Vehicle added successfully');
+      setShowAddModal(false);
+      setNewVehicle({
+        license_plate: '',
+        make: '',
+        model: '',
+        year: '',
+        vin: '',
+        mileage: '',
+        note: ''
+      });
+      fetchVehicles();
+    } catch (err) {
+      console.error('Failed to add vehicle', err);
+      toast.error(err.response?.data?.message || 'Failed to add vehicle');
+    }
+  };
+
+  const cancelAddVehicle = () => {
+    setShowAddModal(false);
+    setNewVehicle({
+      license_plate: '',
+      make: '',
+      model: '',
+      year: '',
+      vin: '',
+      mileage: '',
+      note: ''
+    });
   };
 
   const handleViewHistory = (vehicleId) => {
-    toast.info('Service history coming soon!');
+    navigate(`/customer/vehicles/${vehicleId}`);
   };
 
   const formatMileage = (mileage) => {
@@ -253,7 +420,7 @@ const CustomerVehicles = () => {
         ) : (
           <VehiclesList>
             {vehicles.map(vehicle => (
-              <VehicleCard key={vehicle.vehicle_id}>
+              <VehicleCard key={vehicle.id} onClick={() => navigate(`/customer/vehicles/${vehicle.id}`)} style={{ cursor: 'pointer' }}>
                 <VehicleHeader>
                   <VehicleIconWrapper>
                     <FaCar />
@@ -279,7 +446,7 @@ const CustomerVehicles = () => {
 
                 <ServiceHistory>
                   <HistoryLabel>Service History</HistoryLabel>
-                  <HistoryLink onClick={() => handleViewHistory(vehicle.vehicle_id)}>
+                  <HistoryLink onClick={(e) => { e.stopPropagation(); handleViewHistory(vehicle.id); }}>
                     4 services
                   </HistoryLink>
                 </ServiceHistory>
@@ -288,6 +455,88 @@ const CustomerVehicles = () => {
           </VehiclesList>
         )}
       </Content>
+
+      {showAddModal && (
+        <ModalOverlay onClick={cancelAddVehicle}>
+          <ModalContent onClick={(e) => e.stopPropagation()}>
+            <ModalTitle>Add New Vehicle</ModalTitle>
+            
+            <FormGroup>
+              <Label>License Plate *</Label>
+              <Input
+                type="text"
+                placeholder="Enter license plate"
+                value={newVehicle.license_plate}
+                onChange={(e) => handleVehicleInputChange('license_plate', e.target.value)}
+              />
+            </FormGroup>
+
+            <FormGroup>
+              <Label>Make</Label>
+              <Input
+                type="text"
+                placeholder="e.g., Toyota, Honda"
+                value={newVehicle.make}
+                onChange={(e) => handleVehicleInputChange('make', e.target.value)}
+              />
+            </FormGroup>
+
+            <FormGroup>
+              <Label>Model</Label>
+              <Input
+                type="text"
+                placeholder="e.g., Camry, Civic"
+                value={newVehicle.model}
+                onChange={(e) => handleVehicleInputChange('model', e.target.value)}
+              />
+            </FormGroup>
+
+            <FormGroup>
+              <Label>Year</Label>
+              <Input
+                type="number"
+                placeholder="e.g., 2020"
+                value={newVehicle.year}
+                onChange={(e) => handleVehicleInputChange('year', e.target.value)}
+              />
+            </FormGroup>
+
+            <FormGroup>
+              <Label>VIN</Label>
+              <Input
+                type="text"
+                placeholder="Vehicle Identification Number"
+                value={newVehicle.vin}
+                onChange={(e) => handleVehicleInputChange('vin', e.target.value)}
+              />
+            </FormGroup>
+
+            <FormGroup>
+              <Label>Mileage (km)</Label>
+              <Input
+                type="number"
+                placeholder="Current mileage"
+                value={newVehicle.mileage}
+                onChange={(e) => handleVehicleInputChange('mileage', e.target.value)}
+              />
+            </FormGroup>
+
+            <FormGroup>
+              <Label>Note</Label>
+              <TextArea
+                placeholder="Additional notes about the vehicle"
+                value={newVehicle.note}
+                onChange={(e) => handleVehicleInputChange('note', e.target.value)}
+              />
+            </FormGroup>
+            
+            <ModalButtons>
+              <ModalButton onClick={cancelAddVehicle}>Cancel</ModalButton>
+              <ModalButton $primary onClick={submitAddVehicle}>Add Vehicle</ModalButton>
+            </ModalButtons>
+          </ModalContent>
+        </ModalOverlay>
+      )}
     </Container>
   );
 };

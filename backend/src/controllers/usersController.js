@@ -1,4 +1,5 @@
 const { usersRepo } = require('../repositories');
+const authService = require('../services/auth.service');
 
 const usersController = {
     async getAllUsers(req, res) {
@@ -61,6 +62,24 @@ const usersController = {
         } catch (error) {
             console.error('Error deleting user:', error);
             res.status(500).json({ message: 'Failed to delete user', error: error.message });
+        }
+    },
+
+    async changePassword(req, res) {
+        try {
+            const { oldPassword, newPassword } = req.body;
+            if (!oldPassword || !newPassword) {
+                return res.status(400).json({ message: 'Old password and new password are required' });
+            }
+
+            await authService.changePassword(req.user.id, oldPassword, newPassword);
+            res.json({ message: 'Password changed successfully' });
+        } catch (error) {
+            console.error('Error changing password:', error);
+            if (error.message === 'Old password is incorrect') {
+                return res.status(400).json({ message: error.message });
+            }
+            res.status(500).json({ message: 'Failed to change password', error: error.message });
         }
     }
 };

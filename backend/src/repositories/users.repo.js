@@ -134,6 +134,17 @@ class UsersRepository {
             expires_at: expiresAt
         }, { transaction });
     }
+
+    /**
+     * Update user password
+     */
+    async updatePassword(userId, passwordHash, transaction = null) {
+        const user = await User.findByPk(userId);
+        if (!user) return null;
+
+        await user.update({ password_hash: passwordHash }, { transaction });
+        return user;
+    }
 }
 
 module.exports = new UsersRepository();

@@ -74,8 +74,24 @@ async function logout(refreshToken) {
     await RefreshToken.destroy({ where: { token: refreshToken } });
 }
 
+async function changePassword(userId, oldPassword, newPassword) {
+    const user = await usersRepo.findByEmailWithPassword((await usersRepo.findById(userId)).email);
+    if (!user) throw new Error('User not found');
+
+    const match = await verifyPassword(oldPassword, user.password_hash);
+    if (!match) throw new Error('Old password is incorrect');
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    await usersRepo.updatePassword(userId, hashedPassword);
+
+    return { message: 'Password changed successfully' };
+}
+
 module.exports = {
     createTokensForUser,
-    verifyPassword
-    , login, refresh, logout
+    verifyPassword,
+    login,
+    refresh,
+    logout,
+    changePassword
 };

@@ -1,8 +1,9 @@
 /**
  * Vehicles Controller - Slim version following SOLID
- * Only handles HTTP concerns, delegates to repository
+ * Only handles HTTP concerns, delegates to service layer
  */
 const vehiclesRepo = require('../repositories/vehicles.repo');
+const vehiclesService = require('../services/vehicles.service');
 
 /**
  * Get all vehicles
@@ -26,19 +27,16 @@ exports.getAll = async (req, res) => {
  */
 exports.getById = async (req, res) => {
     try {
-        const vehicle = await vehiclesRepo.findById(req.params.id);
-
-        if (!vehicle) {
-            return res.status(404).json({ message: 'Vehicle not found' });
-        }
-
-        // Verify ownership for Customer role
-        if (req.customerId && vehicle.customer_id !== req.customerId) {
-            return res.status(403).json({ message: 'You can only access your own vehicles' });
-        }
-
+        const vehicle = await vehiclesService.getVehicleById(req.params.id, req.customerId);
         res.json(vehicle);
     } catch (error) {
+        console.error('Error fetching vehicle:', error);
+        if (error.message === 'Vehicle not found') {
+            return res.status(404).json({ message: error.message });
+        }
+        if (error.message.includes('only access your own')) {
+            return res.status(403).json({ message: error.message });
+        }
         res.status(500).json({ message: 'Server error', error: error.message });
     }
 };
@@ -55,24 +53,17 @@ exports.create = async (req, res) => {
             vehicleData.customer_id = req.customerId;
         }
 
-        // Validation
-        if (!vehicleData.customer_id || !vehicleData.license_plate) {
-            return res.status(400).json({
-                message: 'Customer and license plate are required'
-            });
-        }
-
-        // Check for duplicate license plate
-        const existingVehicle = await vehiclesRepo.findByLicensePlate(vehicleData.license_plate);
-        if (existingVehicle) {
-            return res.status(400).json({
-                message: 'Vehicle with this license plate already exists'
-            });
-        }
-
-        const vehicle = await vehiclesRepo.create(vehicleData);
+        const vehicle = await vehiclesService.createVehicle(vehicleData);
         res.status(201).json(vehicle);
     } catch (error) {
+        console.error('Error creating vehicle:', error);
+        if (error.message.includes('required') ||
+            error.message.includes('already exists') ||
+            error.message.includes('not found') ||
+            error.message.includes('Year must') ||
+            error.message.includes('Mileage')) {
+            return res.status(400).json({ message: error.message });
+        }
         res.status(500).json({ message: 'Server error', error: error.message });
     }
 };
@@ -82,30 +73,23 @@ exports.create = async (req, res) => {
  */
 exports.update = async (req, res) => {
     try {
-        const existingVehicle = await vehiclesRepo.findById(req.params.id);
-
-        if (!existingVehicle) {
-            return res.status(404).json({ message: 'Vehicle not found' });
-        }
-
-        // Verify ownership for Customer role
-        if (req.customerId && existingVehicle.customer_id !== req.customerId) {
-            return res.status(403).json({ message: 'You can only update your own vehicles' });
-        }
-
-        // Check for duplicate license plate (excluding current vehicle)
-        if (req.body.license_plate && req.body.license_plate !== existingVehicle.license_plate) {
-            const duplicateVehicle = await vehiclesRepo.findByLicensePlate(req.body.license_plate);
-            if (duplicateVehicle && duplicateVehicle.id !== existingVehicle.id) {
-                return res.status(400).json({
-                    message: 'Vehicle with this license plate already exists'
-                });
-            }
-        }
-
-        const vehicle = await vehiclesRepo.update(req.params.id, req.body);
+        const vehicle = await vehiclesService.updateVehicle(
+            req.params.id,
+            req.customerId,
+            req.body
+        );
         res.json(vehicle);
     } catch (error) {
+        console.error('Error updating vehicle:', error);
+        if (error.message === 'Vehicle not found') {
+            return res.status(404).json({ message: error.message });
+        }
+        if (error.message.includes('only update your own') ||
+            error.message.includes('already exists') ||
+            error.message.includes('Year must') ||
+            error.message.includes('Mileage')) {
+            return res.status(400).json({ message: error.message });
+        }
         res.status(500).json({ message: 'Server error', error: error.message });
     }
 };
@@ -115,20 +99,38 @@ exports.update = async (req, res) => {
  */
 exports.delete = async (req, res) => {
     try {
-        const existingVehicle = await vehiclesRepo.findById(req.params.id);
-
-        if (!existingVehicle) {
-            return res.status(404).json({ message: 'Vehicle not found' });
-        }
-
-        // Verify ownership for Customer role
-        if (req.customerId && existingVehicle.customer_id !== req.customerId) {
-            return res.status(403).json({ message: 'You can only delete your own vehicles' });
-        }
-
-        await vehiclesRepo.delete(req.params.id);
+        await vehiclesService.deleteVehicle(req.params.id, req.customerId);
         res.status(204).end();
     } catch (error) {
+        console.error('Error deleting vehicle:', error);
+        if (error.message === 'Vehicle not found') {
+            return res.status(404).json({ message: error.message });
+        }
+        if (error.message.includes('only delete your own')) {
+            return res.status(403).json({ message: error.message });
+        }
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
+};
+
+/**
+ * Get service history for a vehicle
+ */
+exports.getServiceHistory = async (req, res) => {
+    try {
+        const serviceHistory = await vehiclesService.getVehicleServiceHistory(
+            req.params.id,
+            req.customerId
+        );
+        res.json(serviceHistory);
+    } catch (error) {
+        console.error('Error fetching service history:', error);
+        if (error.message === 'Vehicle not found') {
+            return res.status(404).json({ message: error.message });
+        }
+        if (error.message.includes('only access your own')) {
+            return res.status(403).json({ message: error.message });
+        }
         res.status(500).json({ message: 'Server error', error: error.message });
     }
 };

@@ -131,20 +131,26 @@ const StatusBadge = styled.div`
   font-size: 12px;
   font-weight: 600;
   background: ${props => {
-    switch (props.$status) {
-      case 'Confirmed': return '#dcfce7';
-      case 'In Service': return '#dbeafe';
-      case 'Completed': return '#e0e7ff';
-      case 'Cancelled': return '#fee2e2';
+    const status = props.$status?.toUpperCase();
+    switch (status) {
+      case 'PENDING': return '#fef3c7';
+      case 'CONFIRMED': return '#dcfce7';
+      case 'IN_PROGRESS':
+      case 'IN SERVICE': return '#dbeafe';
+      case 'COMPLETED': return '#e0e7ff';
+      case 'CANCELLED': return '#fee2e2';
       default: return '#f3f4f6';
     }
   }};
   color: ${props => {
-    switch (props.$status) {
-      case 'Confirmed': return '#16a34a';
-      case 'In Service': return '#2563eb';
-      case 'Completed': return '#6366f1';
-      case 'Cancelled': return '#ef4444';
+    const status = props.$status?.toUpperCase();
+    switch (status) {
+      case 'PENDING': return '#d97706';
+      case 'CONFIRMED': return '#16a34a';
+      case 'IN_PROGRESS':
+      case 'IN SERVICE': return '#2563eb';
+      case 'COMPLETED': return '#6366f1';
+      case 'CANCELLED': return '#ef4444';
       default: return '#666';
     }
   }};
@@ -250,18 +256,15 @@ const CustomerBookings = () => {
   };
 
   const filterBookings = () => {
-    const now = new Date();
-    
     switch (activeTab) {
       case 'Upcoming':
         return bookings.filter(b => {
-          const bookingDate = new Date(b.scheduled_time);
-          return bookingDate > now && (b.status === 'Confirmed' || b.status === 'In Service');
+          return b.status === 'Pending' || b.status === 'PENDING' || b.status === 'Confirmed' || b.status === 'CONFIRMED';
         });
       case 'Completed':
-        return bookings.filter(b => b.status === 'Completed');
+        return bookings.filter(b => b.status === 'Completed' || b.status === 'COMPLETED');
       case 'Cancelled':
-        return bookings.filter(b => b.status === 'Cancelled');
+        return bookings.filter(b => b.status === 'Cancelled' || b.status === 'CANCELLED');
       default:
         return bookings;
     }
@@ -338,7 +341,10 @@ const CustomerBookings = () => {
             <EmptyState>No bookings found</EmptyState>
           ) : (
             filteredBookings.map(booking => (
-              <BookingCard key={booking.booking_id}>
+              <BookingCard 
+                key={booking.booking_id}
+                onClick={() => navigate(`/customer/bookings/${booking.id || booking.booking_id}`)}
+              >
                 <BookingHeader>
                   <div>
                     <BookingId>
@@ -364,9 +370,9 @@ const CustomerBookings = () => {
                 <BookingDateTime>
                   <TimeIcon><FaClock /></TimeIcon>
                   <DateTime>
-                    {formatDate(booking.scheduled_time)}
+                    {formatDate(booking.scheduled_at || booking.scheduled_time)}
                     <br />
-                    {formatTime(booking.scheduled_time)}
+                    {formatTime(booking.scheduled_at || booking.scheduled_time)}
                   </DateTime>
                 </BookingDateTime>
               </BookingCard>

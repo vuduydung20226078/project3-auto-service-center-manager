@@ -27,7 +27,6 @@ exports.login = async (req, res) => {
 
 // Đăng ký
 const authOrchestrator = require('../orchestrators/auth.orchestrator');
-const authService = require('../services/auth.service');
 
 exports.register = async (req, res) => {
     const { username, email, password } = req.body;

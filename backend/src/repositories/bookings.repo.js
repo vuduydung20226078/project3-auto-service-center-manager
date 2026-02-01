@@ -3,7 +3,7 @@
  * Isolates Sequelize queries from service layer
  * Follows Repository pattern for easier testing and ORM swapping
  */
-const { Booking, Customer, Vehicle } = require('../models');
+const { Booking, Customer, Vehicle, WorkOrder, WorkOrderItem, Service, Part, Technician, User } = require('../models');
 const { Op } = require('sequelize');
 
 class BookingsRepository {
@@ -27,6 +27,54 @@ class BookingsRepository {
                 {
                     model: Vehicle,
                     attributes: ['id', 'license_plate', 'make', 'model', 'year']
+                }
+            ]
+        });
+    }
+
+    /**
+     * Find booking by ID with detailed related data including work order
+     * Used for booking details page
+     */
+    async findByIdDetailed(id) {
+        return await Booking.findByPk(id, {
+            include: [
+                {
+                    model: Customer,
+                    attributes: ['id', 'name', 'phone', 'email', 'address']
+                },
+                {
+                    model: Vehicle,
+                    attributes: ['id', 'license_plate', 'make', 'model', 'year', 'vin']
+                },
+                {
+                    model: WorkOrder,
+                    include: [
+                        {
+                            model: WorkOrderItem,
+                            include: [
+                                {
+                                    model: Service,
+                                    as: 'service',
+                                    attributes: ['id', 'code', 'name', 'description', 'price']
+                                },
+                                {
+                                    model: Part,
+                                    as: 'part',
+                                    attributes: ['id', 'sku', 'name', 'unit_price', 'unit']
+                                }
+                            ]
+                        },
+                        {
+                            model: Technician,
+                            include: [
+                                {
+                                    model: User,
+                                    attributes: ['id', 'full_name', 'phone']
+                                }
+                            ]
+                        }
+                    ]
                 }
             ]
         });

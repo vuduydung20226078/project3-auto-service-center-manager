@@ -4,7 +4,10 @@ const usersController = require('../controllers/usersController');
 const verifyToken = require('../middlewares/auth');
 const requireRole = require('../middlewares/rbac');
 
-// All routes require authentication and admin role
+// Change password route (authenticated users only, no role restriction)
+router.patch('/change-password', verifyToken, usersController.changePassword);
+
+// All other routes require authentication and admin role
 router.use(verifyToken);
 router.use(requireRole('Admin'));
 

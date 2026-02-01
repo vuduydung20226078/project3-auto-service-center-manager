@@ -12,7 +12,9 @@ import CustomerLayout from './components/Customer/CustomerLayout';
 import CustomerHome from './pages/Customer/CustomerHome';
 import CustomerBookings from './pages/Customer/CustomerBookings';
 import CustomerCreateBooking from './pages/Customer/CustomerCreateBooking';
+import CustomerBookingDetails from './pages/Customer/CustomerBookingDetails';
 import CustomerVehicles from './pages/Customer/CustomerVehicles';
+import CustomerVehicleDetails from './pages/Customer/CustomerVehicleDetails';
 import CustomerProfile from './pages/Customer/CustomerProfile';
 import './App.css';
 import { Routes, Route, Navigate } from 'react-router-dom';
@@ -56,7 +58,9 @@ function App() {
           <Route index element={<CustomerHome />} />
           <Route path="bookings" element={<CustomerBookings />} />
           <Route path="bookings/new" element={<CustomerCreateBooking />} />
+          <Route path="bookings/:id" element={<CustomerBookingDetails />} />
           <Route path="vehicles" element={<CustomerVehicles />} />
+          <Route path="vehicles/:id" element={<CustomerVehicleDetails />} />
           <Route path="profile" element={<CustomerProfile />} />
         </Route>
         

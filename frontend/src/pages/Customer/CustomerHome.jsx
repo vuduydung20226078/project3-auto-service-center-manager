@@ -153,8 +153,14 @@ const VehicleInfo = styled.div`
 const StatusBadge = styled.div`
   display: inline-block;
   padding: 6px 12px;
-  background: ${props => props.$status === 'Confirmed' ? '#dcfce7' : '#dbeafe'};
-  color: ${props => props.$status === 'Confirmed' ? '#16a34a' : '#2563eb'};
+  background: ${props => {
+    const status = props.$status?.toUpperCase();
+    return status === 'CONFIRMED' ? '#dcfce7' : '#fef3c7';
+  }};
+  color: ${props => {
+    const status = props.$status?.toUpperCase();
+    return status === 'CONFIRMED' ? '#16a34a' : '#d97706';
+  }};
   border-radius: 6px;
   font-size: 12px;
   font-weight: 600;
@@ -227,14 +233,12 @@ const CustomerHome = () => {
       // Fetch bookings
       const bookingsData = await getAllBookings();
       
-      // Get next upcoming confirmed booking
-      const now = new Date();
+      // Get next upcoming booking (Pending or Confirmed)
       const upcomingBookings = bookingsData
         .filter(b => {
-          const bookingDate = new Date(b.scheduled_time);
-          return bookingDate > now && (b.status === 'Confirmed' || b.status === 'In Service');
+          return b.status === 'Pending' || b.status === 'PENDING' || b.status === 'Confirmed' || b.status === 'CONFIRMED';
         })
-        .sort((a, b) => new Date(a.scheduled_time) - new Date(b.scheduled_time));
+        .sort((a, b) => new Date(a.scheduled_at || a.scheduled_time) - new Date(b.scheduled_at || b.scheduled_time));
       
       if (upcomingBookings.length > 0) {
         setNextBooking(upcomingBookings[0]);
@@ -244,7 +248,7 @@ const CustomerHome = () => {
       const vehiclesData = await vehiclesApi.getAll();
 
       // Calculate stats
-      const completedBookings = bookingsData.filter(b => b.status === 'Completed').length;
+      const completedBookings = bookingsData.filter(b => b.status === 'Completed' || b.status === 'COMPLETED').length;
       
       setStats({
         totalBookings: bookingsData.length,
@@ -334,8 +338,8 @@ const CustomerHome = () => {
                   <FaCalendarAlt />
                 </BookingIconWrapper>
                 <BookingDetails>
-                  <BookingDate>{formatDate(nextBooking.scheduled_time)}</BookingDate>
-                  <BookingTime>{formatTime(nextBooking.scheduled_time)}</BookingTime>
+                  <BookingDate>{formatDate(nextBooking.scheduled_at || nextBooking.scheduled_time)}</BookingDate>
+                  <BookingTime>{formatTime(nextBooking.scheduled_at || nextBooking.scheduled_time)}</BookingTime>
                 </BookingDetails>
               </BookingInfo>
 

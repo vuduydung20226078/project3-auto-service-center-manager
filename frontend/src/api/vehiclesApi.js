@@ -53,5 +53,16 @@ export const vehiclesApi = {
             console.error('Error deleting vehicle:', error);
             throw error;
         }
+    },
+
+    // Get service history for a vehicle
+    async getServiceHistory(id) {
+        try {
+            const response = await api.get(`/vehicles/${id}/service-history`);
+            return response.data;
+        } catch (error) {
+            console.error('Error fetching service history:', error);
+            throw error;
+        }
     }
 };
