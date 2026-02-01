@@ -9,7 +9,8 @@ import Step4BookingReview from '../components/MainContainerCreateBooking/Step4Bo
 import BookingSuccessPage from '../components/MainContainerCreateBooking/BookingSuccessPage';
 import { BookingProvider, useBooking } from '../contexts/BookingContext';
 import useBookingNavigation from '../hooks/useBookingNavigation';
-import { createCustomerBooking } from '../api/bookingsApi';
+import { createCustomerBooking, createBooking } from '../api/bookingsApi';
+import { useAuth } from '../contexts/AuthContext';
 import toast from '../utils/toast';
 
 const CustomerBookingPageContent = () => {
@@ -37,6 +38,7 @@ const CustomerBookingPageContent = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState(null);
   const [bookingComplete, setBookingComplete] = useState(false);
+  const { user } = useAuth();
 
   const handleNext = async () => {
     if (currentStep === 4) {
@@ -109,17 +111,29 @@ const CustomerBookingPageContent = () => {
       const scheduledDateTime = new Date(`${selectedDate}T${convertTo24Hour(selectedTime)}`);
       const notes = `Services: ${selectedServices.map(s => s.name).join(', ')}. ${additionalNotes || ''}`;
 
-      // Call smart endpoint - it will find or create customer & vehicle
-      const response = await createCustomerBooking({
-        customerData,
-        vehicleData,
-        scheduled_at: scheduledDateTime.toISOString(),
-        notes,
-        selectedServices: selectedServices.map(s => ({ id: s.id, name: s.name, price: s.price }))
-      });
+      let response;
+      if (user && user.role === 'Customer') {
+        // Use authenticated endpoint which will map user -> Customer via user_id
+        response = await createBooking({
+          vehicleData,
+          scheduled_at: scheduledDateTime.toISOString(),
+          notes,
+          selectedServices: selectedServices.map(s => ({ id: s.id, name: s.name, price: s.price }))
+        });
+      } else {
+        // Public flow: smart endpoint will find or create customer & vehicle
+        response = await createCustomerBooking({
+          customerData,
+          vehicleData,
+          scheduled_at: scheduledDateTime.toISOString(),
+          notes,
+          selectedServices: selectedServices.map(s => ({ id: s.id, name: s.name, price: s.price }))
+        });
+      }
 
-      // Set booking ID and show success
-      setBookingId(response.booking.id);
+      // Normalize response and set booking ID
+      const booking = response.booking || response;
+      setBookingId(booking.id);
       setBookingComplete(true);
 
     } catch (error) {
@@ -131,20 +145,18 @@ const CustomerBookingPageContent = () => {
     }
   };
 
-  const convertTo24Hour = (time12h) => {
+  function convertTo24Hour(time12h) {
     const [time, modifier] = time12h.split(' ');
     let [hours, minutes] = time.split(':');
+    hours = parseInt(hours, 10);
     
-    if (hours === '12') {
-      hours = '00';
+    if (modifier === 'AM') {
+      if (hours === 12) hours = 0;
+    } else if (modifier === 'PM') {
+      if (hours !== 12) hours += 12;
     }
-    
-    if (modifier === 'PM') {
-      hours = parseInt(hours, 10) + 12;
-    }
-    
-    return `${hours}:${minutes}:00`;
-  };
+    return `${String(hours).padStart(2, '0')}:${minutes}:00`;
+  }
 
   const getContinueText = () => {
     if (currentStep === 4) return 'Confirm Booking';

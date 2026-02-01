@@ -7,6 +7,8 @@ const ctrl = require('../controllers/customersController');
 router.post('/', ctrl.create);
 
 // Protected routes
+router.get('/me', auth, rbac('Customer'), ctrl.getMe); // Customer's own profile
+router.patch('/me', auth, rbac('Customer'), ctrl.patchMe); // Partial update for authenticated customer
 router.get('/', auth, rbac('Advisor', 'Admin'), ctrl.getAll);
 router.get('/:id', auth, rbac('Advisor', 'Admin'), ctrl.getById);
 router.put('/:id', auth, rbac('Advisor', 'Admin'), ctrl.update);

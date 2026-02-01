@@ -5,6 +5,15 @@ import CustomerDashboard from './pages/CustomerDashboard';
 import CustomerBookingPage from './pages/CustomerBookingPage';
 import TechnicianPortal from './pages/TechnicianPortal';
 import PaymentPage from './pages/PaymentPage';
+import QRPaymentPage from './pages/QRPaymentPage';
+import CreditCardPaymentPage from './pages/CreditCardPaymentPage';
+import PaymentResultPage from './pages/PaymentResultPage';
+import CustomerLayout from './components/Customer/CustomerLayout';
+import CustomerHome from './pages/Customer/CustomerHome';
+import CustomerBookings from './pages/Customer/CustomerBookings';
+import CustomerCreateBooking from './pages/Customer/CustomerCreateBooking';
+import CustomerVehicles from './pages/Customer/CustomerVehicles';
+import CustomerProfile from './pages/Customer/CustomerProfile';
 import './App.css';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './contexts/AuthContext';
@@ -30,10 +39,26 @@ function App() {
           path="/customerlogedin" 
           element={
             isAuthenticated && user?.role === 'Customer' 
-              ? <CustomerDashboard /> 
+              ? <Navigate to="/customer" replace /> 
               : <Navigate to="/" />
           } 
         />
+        
+        {/* Customer Portal with Layout */}
+        <Route 
+          path="/customer" 
+          element={
+            isAuthenticated && user?.role === 'Customer' 
+              ? <CustomerLayout /> 
+              : <Navigate to="/" />
+          }
+        >
+          <Route index element={<CustomerHome />} />
+          <Route path="bookings" element={<CustomerBookings />} />
+          <Route path="bookings/new" element={<CustomerCreateBooking />} />
+          <Route path="vehicles" element={<CustomerVehicles />} />
+          <Route path="profile" element={<CustomerProfile />} />
+        </Route>
         
         {/* Admin Dashboard - for all roles except Customer */}
         <Route 
@@ -53,6 +78,32 @@ function App() {
               ? <PaymentPage /> 
               : <Navigate to="/" />
           } 
+        />
+
+        {/* QR Payment Page - for MoMo and VNPAY */}
+        <Route 
+          path="/payment/qr" 
+          element={
+            isAuthenticated && user?.role !== 'Customer'
+              ? <QRPaymentPage /> 
+              : <Navigate to="/" />
+          } 
+        />
+
+        {/* Credit Card Payment Page */}
+        <Route 
+          path="/payment/credit-card" 
+          element={
+            isAuthenticated && user?.role !== 'Customer'
+              ? <CreditCardPaymentPage /> 
+              : <Navigate to="/" />
+          } 
+        />
+
+        {/* Payment Result Page - for VNPay return */}
+        <Route 
+          path="/payment/result" 
+          element={<PaymentResultPage />} 
         />
       </Routes>
     </div>

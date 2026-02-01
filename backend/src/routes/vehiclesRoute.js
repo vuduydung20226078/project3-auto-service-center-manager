@@ -1,15 +1,16 @@
 const router = require('express').Router();
 const auth = require('../middlewares/auth');
 const rbac = require('../middlewares/rbac');
+const attachCustomer = require('../middlewares/attachCustomer');
 const ctrl = require('../controllers/vehiclesController');
 
-// Public endpoint for customer vehicle registration
-router.post('/', ctrl.create);
+// Protected routes - attachCustomer runs after auth to set req.customerId
+router.use(auth, attachCustomer);
 
-// Protected routes
-router.get('/', auth, rbac('Advisor', 'Admin'), ctrl.getAll);
-router.get('/:id', auth, rbac('Advisor', 'Admin'), ctrl.getById);
-router.put('/:id', auth, rbac('Advisor', 'Admin'), ctrl.update);
-router.delete('/:id', auth, rbac('Admin'), ctrl.delete);
+router.get('/', rbac('Customer', 'Advisor', 'Admin'), ctrl.getAll);
+router.get('/:id', rbac('Customer', 'Advisor', 'Admin'), ctrl.getById);
+router.post('/', rbac('Customer', 'Advisor', 'Admin'), ctrl.create);
+router.put('/:id', rbac('Customer', 'Advisor', 'Admin'), ctrl.update);
+router.delete('/:id', rbac('Customer', 'Advisor', 'Admin'), ctrl.delete);
 
 module.exports = router;

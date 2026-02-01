@@ -5,10 +5,10 @@ import { FaClock, FaCircle } from 'react-icons/fa';
 const Card = styled.div`
   background: ${props => {
     switch(props.$status) {
-      case 'WORKING': return 'linear-gradient(135deg, #dbeafe 0%, #e0e7ff 100%)';
-      case 'WAITING': return 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)';
-      case 'NEW': return 'white';
-      case 'DONE': return 'linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%)';
+      case 'IN_PROGRESS': return 'linear-gradient(135deg, #dbeafe 0%, #e0e7ff 100%)';
+      case 'WAITING_PARTS': return 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)';
+      case 'PENDING': return 'white';
+      case 'COMPLETED': return 'linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%)';
       default: return 'white';
     }
   }};
@@ -17,10 +17,10 @@ const Card = styled.div`
   margin-bottom: 12px;
   border-left: 4px solid ${props => {
     switch(props.$status) {
-      case 'WORKING': return '#3b82f6';
-      case 'WAITING': return '#f59e0b';
-      case 'NEW': return '#6b7280';
-      case 'DONE': return '#10b981';
+      case 'IN_PROGRESS': return '#3b82f6';
+      case 'WAITING_PARTS': return '#f59e0b';
+      case 'PENDING': return '#6b7280';
+      case 'COMPLETED': return '#10b981';
       default: return '#e5e7eb';
     }
   }};
@@ -60,19 +60,19 @@ const StatusBadge = styled.div`
   font-weight: 600;
   background-color: ${props => {
     switch(props.$status) {
-      case 'WORKING': return '#dbeafe';
-      case 'WAITING': return '#fef3c7';
-      case 'NEW': return '#f3f4f6';
-      case 'DONE': return '#d1fae5';
+      case 'IN_PROGRESS': return '#dbeafe';
+      case 'WAITING_PARTS': return '#fef3c7';
+      case 'PENDING': return '#f3f4f6';
+      case 'COMPLETED': return '#d1fae5';
       default: return '#f3f4f6';
     }
   }};
   color: ${props => {
     switch(props.$status) {
-      case 'WORKING': return '#1e40af';
-      case 'WAITING': return '#92400e';
-      case 'NEW': return '#374151';
-      case 'DONE': return '#065f46';
+      case 'IN_PROGRESS': return '#1e40af';
+      case 'WAITING_PARTS': return '#92400e';
+      case 'PENDING': return '#374151';
+      case 'COMPLETED': return '#065f46';
       default: return '#6b7280';
     }
   }};
@@ -120,19 +120,24 @@ const TimeIcon = styled(FaClock)`
 const WorkOrderCard = ({ workOrder, onClick }) => {
   const getStatusLabel = (status) => {
     const labels = {
-      'WORKING': 'WORKING',
-      'WAITING': 'WAITING',
-      'NEW': 'NEW',
-      'DONE': 'DONE'
+      'IN_PROGRESS': 'WORKING',
+      'WAITING_PARTS': 'WAITING',
+      'PENDING': 'NEW',
+      'COMPLETED': 'DONE'
     };
     return labels[status] || status;
   };
 
-  const formatTime = (timeString) => {
-    if (!timeString) return '';
-    const parts = timeString.split(':');
-    return `${parts[0]}:${parts[1]}`;
-  };
+  function formatLocalTime(dateStr) {
+    console.log(dateStr);
+    const time = new Date(dateStr).toLocaleTimeString('vi-VN', {
+      timeZone: 'Asia/Ho_Chi_Minh',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+    console.log(time); 
+    return time;
+  }
 
   return (
     <Card $status={workOrder.status} onClick={() => onClick?.(workOrder)}>
@@ -150,8 +155,7 @@ const WorkOrderCard = ({ workOrder, onClick }) => {
 
       <TimeInfo>
         <TimeIcon />
-        {workOrder.timeType === 'Started' && `Started: ${formatTime(workOrder.time)}`}
-        {workOrder.timeType === 'Scheduled' && `Scheduled: ${formatTime(workOrder.time)}`}
+            <div>Scheduled: {formatLocalTime(workOrder.start_time)}</div>
       </TimeInfo>
     </Card>
   );

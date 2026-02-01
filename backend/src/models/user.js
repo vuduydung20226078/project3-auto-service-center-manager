@@ -17,6 +17,7 @@ module.exports = (sequelize, DataTypes) => {
 
     User.associate = models => {
         User.belongsTo(models.Role, { foreignKey: 'role_id' });
+        User.hasOne(models.Technician, { foreignKey: 'user_id' });
         User.hasMany(models.Customer, { foreignKey: 'user_id' });
         User.hasMany(models.StockEntry, { foreignKey: 'created_by' });
         User.hasMany(models.Assignment, { foreignKey: 'technician_id' });

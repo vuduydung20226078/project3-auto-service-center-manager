@@ -44,10 +44,10 @@ const StatsGrid = styled.div`
 `;
 
 const StatCard = styled.div`
-  background: white;
-  border-radius: 12px;
-  padding: 24px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  padding: 20px;
+  background: ${props => props.$bgColor || '#f5f5f5'};
+  border-radius: 8px;
+  border-left: 4px solid ${props => props.$borderColor || '#4c00b4'};
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -391,7 +391,7 @@ const BookingManagement = () => {
 
       <ContentWrapper>
         <StatsGrid>
-        <StatCard>
+        <StatCard $bgColor="#e3f2fd" $borderColor="#1976d2">
           <StatInfo>
             <StatLabel>Total Bookings</StatLabel>
             <StatValue>{stats.total}</StatValue>
@@ -401,7 +401,7 @@ const BookingManagement = () => {
           </StatIcon>
         </StatCard>
 
-        <StatCard>
+        <StatCard $bgColor="#d4edda" $borderColor="#28a745">
           <StatInfo>
             <StatLabel>Confirmed</StatLabel>
             <StatValue>{stats.confirmed}</StatValue>
@@ -411,7 +411,7 @@ const BookingManagement = () => {
           </StatIcon>
         </StatCard>
 
-        <StatCard>
+        <StatCard $bgColor="#fff3cd" $borderColor="#ffc107">
           <StatInfo>
             <StatLabel>Pending</StatLabel>
             <StatValue>{stats.pending}</StatValue>
@@ -421,7 +421,7 @@ const BookingManagement = () => {
           </StatIcon>
         </StatCard>
 
-        <StatCard>
+        <StatCard $bgColor="#f8d7da" $borderColor="#dc3545">
           <StatInfo>
             <StatLabel>Cancelled</StatLabel>
             <StatValue>{stats.cancelled}</StatValue>

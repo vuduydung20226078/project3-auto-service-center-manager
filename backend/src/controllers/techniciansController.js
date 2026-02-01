@@ -1,9 +1,11 @@
-const techniciansService = require('../services/techniciansService');
+const { techniciansRepo } = require('../repositories');
+const { techniciansService } = require('../services');
 
 // Lấy danh sách technicians
 exports.list = async (req, res) => {
     try {
-        const technicians = await techniciansService.listTechnicians();
+        const available_only = req.query.available === 'true';
+        const technicians = await techniciansRepo.findAll({ available_only });
         res.json(technicians);
     } catch (error) {
         console.error('Error fetching technicians:', error);
@@ -15,7 +17,7 @@ exports.list = async (req, res) => {
 exports.get = async (req, res) => {
     const { id } = req.params;
     try {
-        const technician = await techniciansService.getTechnicianById(id);
+        const technician = await techniciansRepo.findById(id);
         if (!technician) return res.status(404).json({ message: 'Technician not found' });
         res.json(technician);
     } catch (error) {
@@ -28,7 +30,7 @@ exports.get = async (req, res) => {
 exports.create = async (req, res) => {
     const { user_id } = req.body;
     try {
-        const technician = await techniciansService.createTechnician(user_id);
+        const technician = await techniciansRepo.create({ user_id, status: 'AVAILABLE' });
         res.status(201).json(technician);
     } catch (error) {
         console.error('Error creating technician:', error);
@@ -41,7 +43,9 @@ exports.updateStatus = async (req, res) => {
     const { id } = req.params;
     const { status } = req.body;
     try {
-        const technician = await techniciansService.updateTechnicianStatus(id, status);
+        const is_available = status === 'AVAILABLE';
+        const technician = await techniciansRepo.updateAvailability(id, is_available);
+        if (!technician) return res.status(404).json({ message: 'Technician not found' });
         res.json(technician);
     } catch (error) {
         console.error('Error updating technician status:', error);
@@ -53,7 +57,7 @@ exports.updateStatus = async (req, res) => {
 exports.delete = async (req, res) => {
     const { id } = req.params;
     try {
-        const deleted = await techniciansService.deleteTechnician(id);
+        const deleted = await techniciansRepo.delete(id);
         if (!deleted) return res.status(404).json({ message: 'Technician not found' });
         res.json({ message: 'Technician deleted successfully' });
     } catch (error) {

@@ -294,8 +294,7 @@ const InvoiceManagement = () => {
     try {
       setLoading(true);
       const params = statusFilter !== 'all' ? { status: statusFilter } : {};
-      const response = await invoicesApi.getAll(params);
-      const invoiceData = response.data || [];
+      const invoiceData = await invoicesApi.getAll(params) || [];
       setInvoices(invoiceData);
       calculateStats(invoiceData);
     } catch (error) {
@@ -325,7 +324,7 @@ const InvoiceManagement = () => {
       data = [];
     }
     const total = data.length;
-    const totalRevenue = data.reduce((sum, inv) => sum + parseFloat(inv.amount_due || 0), 0);
+    const totalRevenue = data.reduce((sum, inv) => sum + (inv.status === 'PAID' ? parseFloat(inv.amount_due || 0) : 0), 0);
     const paid = data.filter(inv => inv.status === 'PAID').length;
     const unpaid = data.filter(inv => inv.status === 'UNPAID').length;
     

@@ -1,9 +1,9 @@
-const usersService = require('../services/usersService');
+const { usersRepo } = require('../repositories');
 
 const usersController = {
     async getAllUsers(req, res) {
         try {
-            const users = await usersService.getAllUsers();
+            const users = await usersRepo.findAll();
             res.json(users);
         } catch (error) {
             console.error('Error fetching users:', error);
@@ -13,7 +13,7 @@ const usersController = {
 
     async getUserById(req, res) {
         try {
-            const user = await usersService.getUserById(req.params.id);
+            const user = await usersRepo.findById(req.params.id);
             if (!user) {
                 return res.status(404).json({ message: 'User not found' });
             }
@@ -26,7 +26,10 @@ const usersController = {
 
     async updateUser(req, res) {
         try {
-            const user = await usersService.updateUser(req.params.id, req.body);
+            const user = await usersRepo.update(req.params.id, req.body);
+            if (!user) {
+                return res.status(404).json({ message: 'User not found' });
+            }
             res.json(user);
         } catch (error) {
             console.error('Error updating user:', error);
@@ -37,7 +40,10 @@ const usersController = {
     async toggleUserStatus(req, res) {
         try {
             const { status } = req.body;
-            const user = await usersService.toggleUserStatus(req.params.id, status);
+            const user = await usersRepo.updateStatus(req.params.id, status);
+            if (!user) {
+                return res.status(404).json({ message: 'User not found' });
+            }
             res.json(user);
         } catch (error) {
             console.error('Error toggling user status:', error);
@@ -47,8 +53,11 @@ const usersController = {
 
     async deleteUser(req, res) {
         try {
-            const result = await usersService.deleteUser(req.params.id);
-            res.json(result);
+            const deleted = await usersRepo.delete(req.params.id);
+            if (!deleted) {
+                return res.status(404).json({ message: 'User not found' });
+            }
+            res.json({ message: 'User deleted successfully' });
         } catch (error) {
             console.error('Error deleting user:', error);
             res.status(500).json({ message: 'Failed to delete user', error: error.message });

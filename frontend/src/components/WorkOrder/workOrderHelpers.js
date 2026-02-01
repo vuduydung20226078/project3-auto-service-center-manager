@@ -1,8 +1,10 @@
 // Helper functions for Work Order Management
 
 export const calculateTotal = (services, parts) => {
-    const servicesTotal = services.reduce((sum, s) => sum + (s.quantity * s.price), 0);
-    const partsTotal = parts.reduce((sum, p) => sum + (p.quantity * p.price), 0);
+    // Services always have quantity = 1, just sum their prices
+    const servicesTotal = services.reduce((sum, s) => sum + (parseFloat(s.price) || 0), 0);
+    // Parts have quantity, multiply price * quantity
+    const partsTotal = parts.reduce((sum, p) => sum + ((parseFloat(p.price) || 0) * (parseInt(p.quantity) || 0)), 0);
     return servicesTotal + partsTotal;
 };
 

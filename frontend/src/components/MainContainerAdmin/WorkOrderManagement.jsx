@@ -225,7 +225,15 @@ const WorkOrderManagement = () => {
         workOrdersApi.getStats()
       ]);
       setWorkOrders(ordersData);
-      setStats(statsData);
+      // Map backend stats fields to UI-friendly keys
+      const mapped = {
+        // Active = open + in_progress
+        activeOrders: Number(statsData.open || 0) + Number(statsData.in_progress || 0),
+        // Pending = total - completed - cancelled (fallback to open if negative)
+        pendingOrders: Math.max(0, Number(statsData.total || 0) - Number(statsData.completed || 0) - Number(statsData.cancelled || 0)),
+        totalRevenue: Number(statsData.total_revenue || 0)
+      };
+      setStats(mapped);
     } catch (error) {
       console.error('Error fetching data:', error);
     } finally {
@@ -265,10 +273,18 @@ const WorkOrderManagement = () => {
 
   const filteredOrders = workOrders.filter(wo => {
     const query = searchQuery.toLowerCase();
+    const customerName = (
+      wo.customer?.name || wo.customer ||
+      wo.booking?.customer?.name || wo.booking?.customer ||
+      wo.vehicle?.Customer?.name || wo.vehicle?.customer?.name || ''
+    ).toString().toLowerCase();
+    const vehicleLabel = (
+      wo.vehicle?.license_plate || wo.vehicle?.name || wo.vehicle || ''
+    ).toString().toLowerCase();
     return (
       wo.id?.toString().includes(query) ||
-      wo.customer?.toLowerCase().includes(query) ||
-      wo.vehicle?.toLowerCase().includes(query)
+      customerName.includes(query) ||
+      vehicleLabel.includes(query)
     );
   });
 
@@ -353,8 +369,18 @@ const WorkOrderManagement = () => {
                 <tr key={wo.id}>
                   <Td>#{wo.id}</Td>
                   <Td>{wo.customer || 'N/A'}</Td>
-                  <Td>{wo.vehicle || 'N/A'}</Td>
-                  <Td>{wo.technician || 'Unassigned'}</Td>
+                      <Td>{(
+                        wo.customer?.name || wo.customer ||
+                        wo.booking?.customer?.name || wo.booking?.customer ||
+                        wo.vehicle?.Customer?.name || wo.vehicle?.customer?.name ||
+                        'Walk-in'
+                      )}</Td>
+                      <Td>{(
+                        wo.vehicle?.license_plate || wo.vehicle?.name || wo.vehicle || 'N/A'
+                      )}</Td>
+                      <Td>{(
+                        wo.technician?.User?.full_name || wo.technician?.user?.full_name || wo.technician?.full_name || 'Unassigned'
+                      )}</Td>
                   <Td>
                     {wo.created_at 
                       ? new Date(wo.created_at).toLocaleString('en-US', {

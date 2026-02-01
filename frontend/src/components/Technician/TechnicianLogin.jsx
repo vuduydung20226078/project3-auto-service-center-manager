@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import styled from 'styled-components';
-import { FaWrench, FaUser, FaLock } from 'react-icons/fa';
+import { FaWrench, FaUser, FaLock, FaEnvelope } from 'react-icons/fa';
+import { login } from '../../api/auth';
 
 const Container = styled.div`
   min-height: 100vh;
@@ -148,22 +149,45 @@ const Version = styled.div`
   margin-top: 24px;
 `;
 
+const ErrorMessage = styled.div`
+  background: #fee;
+  border: 1px solid #fcc;
+  color: #c33;
+  padding: 12px 16px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  font-size: 13px;
+  text-align: center;
+`;
+
 const TechnicianLogin = ({ onLogin }) => {
   const [credentials, setCredentials] = useState({
-    username: '',
+    email: '',
     password: ''
   });
+  const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Mock login - sẽ thay bằng API call sau
-    if (credentials.username && credentials.password) {
-      onLogin?.({
-        id: 1,
-        username: credentials.username,
-        fullName: 'Nguyễn Văn A',
-        email: 'vuduyduong0811997@gmail.com'
-      });
+    setError('');
+    setIsLoading(true);
+
+    try {
+      const response = await login({ email: credentials.email, password: credentials.password });
+      
+      // Check if user is a technician
+      if (response.user.role !== 'Technician') {
+        setError('Access denied. Technician credentials required.');
+        setIsLoading(false);
+        return;
+      }
+
+      // User data already stored in auth.js
+      onLogin?.(response.user);
+    } catch (err) {
+      setError(err.response?.data?.message || 'Login failed. Please try again.');
+      setIsLoading(false);
     }
   };
 
@@ -178,19 +202,20 @@ const TechnicianLogin = ({ onLogin }) => {
         <Subtitle>AutoCare Service Center</Subtitle>
 
         <Form onSubmit={handleSubmit}>
+          {error && <ErrorMessage>{error}</ErrorMessage>}
           <FormGroup>
             <Label>
-              <FaUser /> Username
+              <FaEnvelope /> Email
             </Label>
             <InputWrapper>
               <InputIcon>
-                <FaUser />
+                <FaEnvelope />
               </InputIcon>
               <Input
                 type="text"
-                placeholder="Enter your username"
-                value={credentials.username}
-                onChange={(e) => setCredentials({ ...credentials, username: e.target.value })}
+                placeholder="Enter your email"
+                value={credentials.email}
+                onChange={(e) => setCredentials({ ...credentials, email: e.target.value })}
                 required
               />
             </InputWrapper>
@@ -214,8 +239,8 @@ const TechnicianLogin = ({ onLogin }) => {
             </InputWrapper>
           </FormGroup>
 
-          <SignInButton type="submit">
-            Sign In
+          <SignInButton type="submit" disabled={isLoading}>
+            {isLoading ? 'Signing In...' : 'Sign In'}
           </SignInButton>
         </Form>
 

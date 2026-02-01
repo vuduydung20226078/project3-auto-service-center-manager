@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { FaSignOutAlt } from 'react-icons/fa';
 import WorkOrderCard from './WorkOrderCard';
+import technicianAPI from '../../api/technicianAPI';
 
 const Container = styled.div`
   min-height: 100vh;
@@ -174,74 +175,82 @@ const EmptyState = styled.div`
 const TechnicianWorkOrders = ({ user, onLogout, onSelectWorkOrder }) => {
   const [activeTab, setActiveTab] = useState('Today');
   const [activeFilter, setActiveFilter] = useState('all');
+  const [workOrders, setWorkOrders] = useState([]);
+  const [stats, setStats] = useState({
+    total: 0,
+    inProgress: 0,
+    completed: 0
+  });
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState('');
 
-  // Mock data - sẽ thay bằng API call
-  const mockWorkOrders = [
-    {
-      id: 'WO-2026-001',
-      licensePlate: '30A-123.45',
-      customerName: 'Nguyen Van A',
-      vehicleModel: 'Honda City 2022',
-      status: 'WORKING',
-      timeType: 'Started',
-      time: '09:15',
-      tab: 'Today'
-    },
-    {
-      id: 'WO-2026-002',
-      licensePlate: '29B-456.78',
-      customerName: 'Tran Thi B',
-      vehicleModel: 'Toyota Vios 2020',
-      status: 'WAITING',
-      timeType: 'Scheduled',
-      time: '08:30',
-      tab: 'Today'
-    },
-    {
-      id: 'WO-2026-003',
-      licensePlate: '51F-789.01',
-      customerName: 'Le Van C',
-      vehicleModel: 'Mazda CX-5 2023',
-      status: 'NEW',
-      timeType: 'Scheduled',
-      time: '14:00',
-      tab: 'Today'
-    },
-    {
-      id: 'WO-2026-004',
-      licensePlate: '30G-234.56',
-      customerName: 'Pham Thi D',
-      vehicleModel: 'Ford Ranger 2021',
-      status: 'DONE',
-      timeType: 'Scheduled',
-      time: '08:00',
-      tab: 'Done'
-    },
-    {
-      id: 'WO-2026-005',
-      licensePlate: '92C-567.89',
-      customerName: 'Hoang Van E',
-      vehicleModel: 'Hyundai Accent 2022',
-      status: 'DONE',
-      timeType: 'Scheduled',
-      time: '10:30',
-      tab: 'Done'
+  useEffect(() => {
+    fetchWorkOrders();
+    fetchStats();
+  }, [activeTab]);
+
+  const fetchWorkOrders = async () => {
+    try {
+      setIsLoading(true);
+      let params = {};
+      
+      if (activeTab === 'Today') {
+        // Get local date (YYYY-MM-DD) to avoid timezone issues
+        const today = new Date();
+        const year = today.getFullYear();
+        const month = String(today.getMonth() + 1).padStart(2, '0');
+        const day = String(today.getDate()).padStart(2, '0');
+        params.date = `${year}-${month}-${day}`;
+      } else if (activeTab === 'In Progress') {
+        params.status = 'IN_PROGRESS';
+      } else if (activeTab === 'Done') {
+        params.status = 'COMPLETED';
+      }
+
+      const data = await technicianAPI.getWorkOrders(params);
+      
+      // Transform data to match component format
+      const transformedData = data.map(wo => ({
+        id: `WO-${wo.id}`,
+        workOrderId: wo.id,
+        licensePlate: wo.Vehicle?.license_plate || 'N/A',
+        customerName: wo.Vehicle?.Customer?.name || 'N/A',
+        vehicleModel: `${wo.Vehicle?.make || ''} ${wo.Vehicle?.model || ''}`.trim() || 'N/A',
+        status: wo.status,
+        start_time: wo.start_time,
+        tab: wo.status === 'COMPLETED' ? 'Done' : 'Today'
+      }));
+
+      setWorkOrders(transformedData);
+      setError('');
+    } catch (err) {
+      setError('Failed to load work orders');
+      console.error('Error fetching work orders:', err);
+    } finally {
+      setIsLoading(false);
     }
-  ];
-
-  const stats = {
-    total: 5,
-    inProgress: 1,
-    done: 2
   };
 
-  const filteredWorkOrders = mockWorkOrders.filter(wo => {
+  const fetchStats = async () => {
+    try {
+      const statsData = await technicianAPI.getStats();
+      setStats({
+        total: statsData.total,
+        inProgress: statsData.inProgress,
+        completed: statsData.completed
+      });
+    } catch (err) {
+      console.error('Error fetching stats:', err);
+    }
+  };
+
+  const filteredWorkOrders = workOrders.filter(wo => {
     if (activeTab === 'Today') {
       return wo.tab === 'Today';
     } else if (activeTab === 'In Progress') {
-      return wo.status === 'WORKING';
+      return wo.status === 'IN_PROGRESS';
     } else if (activeTab === 'Done') {
-      return wo.status === 'DONE';
+      return wo.status === 'COMPLETED';
     }
     return true;
   });
@@ -270,7 +279,7 @@ const TechnicianWorkOrders = ({ user, onLogout, onSelectWorkOrder }) => {
         </HeaderTop>
         
         <UserBanner>
-          Hello, {user?.email || 'vuduyduong0811997@gmail.com'}
+          Hello, {user?.username || user?.email || 'Technician'}
         </UserBanner>
       </Header>
 
@@ -284,7 +293,7 @@ const TechnicianWorkOrders = ({ user, onLogout, onSelectWorkOrder }) => {
           <StatLabel>In Progress</StatLabel>
         </StatCard>
         <StatCard $type="done" $active={activeFilter === 'done'} onClick={() => setActiveFilter('done')}>
-          <StatValue>{stats.done}</StatValue>
+          <StatValue>{stats.completed}</StatValue>
           <StatLabel>Done</StatLabel>
         </StatCard>
       </StatsContainer>
@@ -302,7 +311,11 @@ const TechnicianWorkOrders = ({ user, onLogout, onSelectWorkOrder }) => {
       </TabsContainer>
 
       <WorkOrdersList>
-        {filteredWorkOrders.length > 0 ? (
+        {isLoading ? (
+          <EmptyState>Loading...</EmptyState>
+        ) : error ? (
+          <EmptyState style={{ color: '#ef4444' }}>{error}</EmptyState>
+        ) : filteredWorkOrders.length > 0 ? (
           filteredWorkOrders.map(wo => (
             <WorkOrderCard 
               key={wo.id} 

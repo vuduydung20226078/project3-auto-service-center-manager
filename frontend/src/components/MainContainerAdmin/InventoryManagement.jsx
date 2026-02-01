@@ -407,9 +407,9 @@ const InventoryManagement = () => {
       
       const matchesStock = 
         stockFilter === 'All' ||
-        (stockFilter === 'Low' && item.qty <= 5) ||
+        (stockFilter === 'Low' && item.qty < 10) ||
         (stockFilter === 'Out' && item.qty === 0) ||
-        (stockFilter === 'Available' && item.qty > 5);
+        (stockFilter === 'Available' && item.qty >= 10);
       
       return matchesSearch && matchesStock;
     });
@@ -417,7 +417,7 @@ const InventoryManagement = () => {
 
   const getStats = () => {
     const totalItems = inventory.length;
-    const lowStock = inventory.filter(item => item.qty > 0 && item.qty <= 5).length;
+    const lowStock = inventory.filter(item => item.qty > 0 && item.qty < 10).length;
     const outOfStock = inventory.filter(item => item.qty === 0).length;
     const totalQuantity = inventory.reduce((sum, item) => sum + item.qty, 0);
 
@@ -451,7 +451,7 @@ const InventoryManagement = () => {
       label: 'Quantity', 
       width: '100px',
       render: (value) => {
-        const color = value === 0 ? '#c5192d' : value <= 5 ? '#f57c00' : '#0f8419';
+        const color = value === 0 ? '#c5192d' : value < 10 ? '#f57c00' : '#0f8419';
         return <span style={{ color, fontWeight: 600 }}>{value}</span>;
       }
     },

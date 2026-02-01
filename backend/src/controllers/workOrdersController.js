@@ -1,19 +1,23 @@
-const workOrdersService = require('../services/workOrdersService');
+const { workOrdersRepo, techniciansRepo } = require('../repositories');
+const workOrderOrchestrator = require('../orchestrators/workOrder.orchestrator');
 
 // Tạo work order trực tiếp với items (walk-in customer)
 exports.create = async (req, res) => {
-    const { vehicle_id, technician_id, status, items } = req.body;
+    const { vehicle_id, technician_id, status, items, start_time, end_time, estimated_duration } = req.body;
     console.log('=== CREATE WORK ORDER REQUEST ===');
     console.log('Body:', JSON.stringify(req.body, null, 2));
     console.log('User:', req.user);
 
     try {
-        const wo = await workOrdersService.createWorkOrderWithItems({
+        const wo = await workOrderOrchestrator.createWorkOrderWithItems({
             vehicle_id,
             technician_id,
             status: status || 'OPEN',
             items: items || [],
-            user_id: req.user.id
+            user_id: req.user.id,
+            start_time: start_time || null,
+            end_time: end_time || null,
+            estimated_duration: estimated_duration || 90
         });
         res.status(201).json(wo);
     } catch (error) {
@@ -35,37 +39,20 @@ exports.create = async (req, res) => {
 // Tạo work order từ booking
 exports.createFromBooking = async (req, res) => {
     const { booking_id, technician_id, vehicle_id, items = [], start_time, estimated_duration } = req.body;
-    const user_id = req.user?.id || 1; // Get from auth middleware
+    const user_id = req.user?.id || 1;
 
     try {
-        // If items provided, create work order with items
-        if (items && items.length > 0) {
-            const wo = await workOrdersService.createWorkOrderWithItems({
-                booking_id,
-                vehicle_id,
-                technician_id,
-                status: 'OPEN',
-                items,
-                user_id,
-                start_time,
-                estimated_duration
-            });
+        const wo = await workOrderOrchestrator.createWorkOrderFromBooking({
+            booking_id,
+            vehicle_id,
+            technician_id,
+            items,
+            user_id,
+            start_time,
+            estimated_duration
+        });
 
-            // Update booking status to CONFIRMED and link work order
-            await workOrdersService.updateBookingWithWorkOrder(booking_id, wo.id, 'CONFIRMED');
-
-            res.status(201).json(wo);
-        } else {
-            // Create empty work order (legacy support)
-            const wo = await workOrdersService.createWorkOrderFromBooking({
-                booking_id,
-                technician_id,
-                vehicle_id
-            });
-
-            await workOrdersService.updateBookingWithWorkOrder(booking_id, wo.id, 'CONFIRMED');
-            res.status(201).json(wo);
-        }
+        res.status(201).json(wo);
     } catch (error) {
         console.error('Error creating work order from booking:', error);
         res.status(500).json({
@@ -79,7 +66,7 @@ exports.createFromBooking = async (req, res) => {
 exports.get = async (req, res) => {
     const { id } = req.params;
     try {
-        const wo = await workOrdersService.getWorkOrderById(id);
+        const wo = await workOrdersRepo.findById(id);
         if (!wo) return res.status(404).json({ message: 'Not found' });
 
         const plainWo = wo.get({ plain: true });
@@ -107,9 +94,17 @@ exports.get = async (req, res) => {
 // Thêm item (Service/Part) vào work order
 exports.addItem = async (req, res) => {
     const { id } = req.params;
-    const { item_type, item_id, quantity = 1, unit_price } = req.body;
+    const { item_type, item_id, quantity = 1, unit_price, description } = req.body;
     try {
-        await workOrdersService.addItemToWorkOrder({ id, item_type, item_id, quantity, unit_price, user_id: req.user.id });
+        await workOrderOrchestrator.addItemToWorkOrder({
+            work_order_id: id,
+            item_type,
+            item_id,
+            quantity,
+            unit_price,
+            description,
+            user_id: req.user.id
+        });
         res.status(201).json({ success: true });
     } catch (error) {
         res.status(500).json({ message: 'Server error', error: error.message });
@@ -121,8 +116,8 @@ exports.assignTech = async (req, res) => {
     const { id } = req.params;
     const { technician_id } = req.body;
     try {
-        const row = await workOrdersService.assignTechnicianToWorkOrder(id, technician_id);
-        res.status(201).json(row);
+        const wo = await workOrderOrchestrator.assignTechnicianToWorkOrder(id, technician_id);
+        res.status(201).json(wo);
     } catch (error) {
         res.status(500).json({ message: 'Server error', error: error.message });
     }
@@ -133,7 +128,23 @@ exports.updateStatus = async (req, res) => {
     const { id } = req.params;
     const { status } = req.body;
     try {
-        const wo = await workOrdersService.updateWorkOrderStatus(id, status);
+        // If status is COMPLETED, use orchestrator to free technician
+        if (status === 'COMPLETED') {
+            const wo = await workOrderOrchestrator.completeWorkOrder(id);
+            return res.json(wo);
+        }
+
+        // For IN_PROGRESS, mark technician as BUSY
+        const workOrder = await workOrdersRepo.findById(id);
+        if (!workOrder) return res.status(404).json({ message: 'Work order not found' });
+
+        await workOrdersRepo.updateStatus(id, status);
+
+        if (status === 'IN_PROGRESS' && workOrder.technician_id) {
+            await techniciansRepo.updateAvailability(workOrder.technician_id, false);
+        }
+
+        const wo = await workOrdersRepo.findById(id);
         res.json(wo);
     } catch (error) {
         res.status(500).json({ message: 'Server error', error: error.message });
@@ -143,7 +154,7 @@ exports.updateStatus = async (req, res) => {
 // Lấy tất cả work orders
 exports.listAll = async (req, res) => {
     try {
-        const rows = await workOrdersService.listAllWorkOrders();
+        const rows = await workOrdersRepo.findAll();
         const formatted = rows.map(wo => {
             const plainWo = wo.get({ plain: true });
             return {
@@ -169,8 +180,8 @@ exports.listAll = async (req, res) => {
 exports.delete = async (req, res) => {
     const { id } = req.params;
     try {
-        const row = await workOrdersService.deleteWorkOrder(id);
-        if (!row) return res.status(404).json({ message: 'Work Order not found' });
+        const deleted = await workOrdersRepo.delete(id);
+        if (!deleted) return res.status(404).json({ message: 'Work Order not found' });
         res.status(204).end();
     } catch (error) {
         res.status(500).json({ message: 'Server error', error: error.message });
@@ -180,7 +191,7 @@ exports.delete = async (req, res) => {
 // Get work order statistics
 exports.getStats = async (req, res) => {
     try {
-        const stats = await workOrdersService.getWorkOrderStats();
+        const stats = await workOrdersRepo.getStats();
         res.json(stats);
     } catch (error) {
         res.status(500).json({ message: 'Server error', error: error.message });

@@ -15,7 +15,7 @@ module.exports = (sequelize, DataTypes) => {
     });
 
     Service.associate = models => {
-        // relations if any
+        Service.hasMany(models.WorkOrderItem, { foreignKey: 'item_id', constraints: false, as: 'workOrderItems' });
     };
 
     return Service;

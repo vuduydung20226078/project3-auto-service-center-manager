@@ -33,6 +33,8 @@ app.use('/api/work-orders', require('./routes/workOrdersRoute')); // Đăng ký 
 app.use('/api/billing', require('./routes/billingRoute')); // Đăng ký route cho billing
 app.use('/api/stocks', require('./routes/stocksRoute')); // Đăng ký route cho stocks
 app.use('/api/dashboard', require('./routes/dashboardRoute')); // Đăng ký route cho dashboard
+app.use('/api/technician', require('./routes/technicianRoute')); // Đăng ký route cho technician portal
+app.use('/api/payment', require('./routes/paymentRoute')); // Đăng ký route cho payment
 
 app.use((err, req, res, next) => {
     // In ra thông tin lỗi chi tiết vào console để debug
@@ -42,6 +44,7 @@ app.use((err, req, res, next) => {
     res.status(500).send('Something went wrong!');
 });
 // Set up server port
+
 const PORT = process.env.PORT || 5000;
 
 async function start() {

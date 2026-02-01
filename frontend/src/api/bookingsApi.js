@@ -9,7 +9,38 @@ export const getAllBookings = async (filters = {}) => {
         if (filters.to) params.append('to', filters.to);
 
         const response = await api.get(`/bookings${params.toString() ? '?' + params.toString() : ''}`);
-        return response.data;
+        const raw = response.data;
+        // Normalize booking shape for frontend components
+        const normalize = (b) => ({
+            booking_id: b.booking_id || b.id,
+            id: b.id,
+            customer_id: b.customer_id,
+            vehicle_id: b.vehicle_id,
+            // API uses `scheduled_at`; frontend expects `scheduled_time`
+            scheduled_time: b.scheduled_time || b.scheduled_at,
+            status: (function (s) {
+                if (!s) return s;
+                switch (s.toUpperCase()) {
+                    case 'CANCELLED': return 'Cancelled';
+                    case 'CONFIRMED': return 'Confirmed';
+                    case 'PENDING': return 'Pending';
+                    case 'IN_PROGRESS': return 'In Service';
+                    case 'IN_SERVICE': return 'In Service';
+                    case 'COMPLETED': return 'Completed';
+                    default: return s;
+                }
+            })(b.status),
+            notes: b.notes,
+            work_order_id: b.work_order_id,
+            createdAt: b.createdAt,
+            updatedAt: b.updatedAt,
+            // Normalize nested relations to lowercase keys expected by UI
+            customer: b.Customer || b.customer || null,
+            vehicle: b.Vehicle || b.vehicle || null
+        });
+
+        if (Array.isArray(raw)) return raw.map(normalize);
+        return normalize(raw);
     } catch (error) {
         console.error('Error fetching bookings:', error);
         throw error;
@@ -20,7 +51,35 @@ export const getAllBookings = async (filters = {}) => {
 export const getBookingById = async (id) => {
     try {
         const response = await api.get(`/bookings/${id}`);
-        return response.data;
+        const b = response.data;
+        // reuse normalization logic for single booking
+        const normalize = (b) => ({
+            booking_id: b.booking_id || b.id,
+            id: b.id,
+            customer_id: b.customer_id,
+            vehicle_id: b.vehicle_id,
+            scheduled_time: b.scheduled_time || b.scheduled_at,
+            status: (function (s) {
+                if (!s) return s;
+                switch (s.toUpperCase()) {
+                    case 'CANCELLED': return 'Cancelled';
+                    case 'CONFIRMED': return 'Confirmed';
+                    case 'PENDING': return 'Pending';
+                    case 'IN_PROGRESS': return 'In Service';
+                    case 'IN_SERVICE': return 'In Service';
+                    case 'COMPLETED': return 'Completed';
+                    default: return s;
+                }
+            })(b.status),
+            notes: b.notes,
+            work_order_id: b.work_order_id,
+            createdAt: b.createdAt,
+            updatedAt: b.updatedAt,
+            customer: b.Customer || b.customer || null,
+            vehicle: b.Vehicle || b.vehicle || null
+        });
+
+        return normalize(b);
     } catch (error) {
         console.error('Error fetching booking:', error);
         throw error;

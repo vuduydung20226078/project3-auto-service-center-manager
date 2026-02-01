@@ -16,6 +16,7 @@ module.exports = (sequelize, DataTypes) => {
     Part.associate = models => {
         Part.hasMany(models.Stock, { foreignKey: 'part_id' });
         Part.hasMany(models.StockEntry, { foreignKey: 'part_id' });
+        Part.hasMany(models.WorkOrderItem, { foreignKey: 'item_id', constraints: false, as: 'workOrderItems' });
     };
 
     return Part;

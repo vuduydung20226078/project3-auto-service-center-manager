@@ -387,7 +387,7 @@ const LoginSignup = () => {
       
       // Navigate based on role
       if (response.user && response.user.role === 'Customer') {
-        navigate('/customerlogedin');
+        navigate('/customer');
       } else {
         navigate('/admin');
       }

@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { FaArrowLeft, FaCar, FaUser, FaPhone, FaTachometerAlt, FaPalette, FaCheckCircle, FaSave } from 'react-icons/fa';
+import technicianAPI from '../../api/technicianAPI';
 
 const Container = styled.div`
   min-height: 100vh;
@@ -274,31 +275,48 @@ const SaveNotesButton = styled.button`
 `;
 
 const TechnicianWorkOrderDetail = ({ workOrder, onBack, onStatusChange }) => {
-  const [tasks, setTasks] = useState([
-    { id: 1, text: 'Brake system inspection', checked: false },
-    { id: 2, text: 'Tire pressure check (32 PSI)', checked: false }
-  ]);
+  const [tasks, setTasks] = useState([]);
+  const [parts, setParts] = useState([]);
   const [notes, setNotes] = useState('');
+  const [detail, setDetail] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSavingNotes, setIsSavingNotes] = useState(false);
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
 
-  // Mock data
-  const mockDetail = {
-    id: 'WO-2026-001',
-    status: 'WORKING',
-    vehicle: {
-      licensePlate: '30A-123.45',
-      model: 'Honda City 2022',
-      color: 'White',
-      mileage: '45,930 km'
-    },
-    customer: {
-      name: 'Nguyen Van A',
-      phone: '0912 345 678'
-    },
-    parts: [
-      { id: 1, name: 'Castrol Engine Oil 5W-30', quantity: 'x4 liters' },
-      { id: 2, name: 'Toyota Oil Filter #99915-YZZD2', quantity: 'x1 piece' },
-      { id: 3, name: 'Cabin Air Filter', quantity: 'x1 piece' }
-    ]
+  useEffect(() => {
+    if (workOrder?.workOrderId) {
+      fetchWorkOrderDetail();
+    }
+  }, [workOrder]);
+
+  const fetchWorkOrderDetail = async () => {
+    try {
+      setIsLoading(true);
+      const data = await technicianAPI.getWorkOrderDetail(workOrder.workOrderId);
+      setDetail(data);
+      setNotes(data.technician_notes || '');
+      
+      // Generate tasks from SERVICE items only
+      const serviceItems = data.WorkOrderItems?.filter(item => item.item_type === 'SERVICE') || [];
+      const generatedTasks = serviceItems.map((item, index) => ({
+        id: index + 1,
+        text: item.service.name || `Service #${item.item_id}`,
+        checked: false
+      }));
+      const parts = data.WorkOrderItems?.filter(item => item.item_type === 'PART').map((item, index) => ({
+        id: index + 1,
+        name: item.part.name || `Part #${item.item_id}`,
+        quantity: `x${item.quantity} ${item.part.unit || ''}`
+      })) || [];
+
+      setTasks(generatedTasks);
+      setParts(parts);
+    } catch (err) {
+      console.error('Error fetching work order detail:', err);
+      alert('Failed to load work order details');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleTaskToggle = (taskId) => {
@@ -307,9 +325,81 @@ const TechnicianWorkOrderDetail = ({ workOrder, onBack, onStatusChange }) => {
     ));
   };
 
-  const handleSaveNotes = () => {
-    alert('Notes saved!');
+  const handleSaveNotes = async () => {
+    if (!workOrder?.workOrderId) return;
+    
+    try {
+      setIsSavingNotes(true);
+      await technicianAPI.updateTechnicianNotes(workOrder.workOrderId, notes);
+      alert('Notes saved successfully!');
+    } catch (err) {
+      console.error('Error saving notes:', err);
+      alert('Failed to save notes');
+    } finally {
+      setIsSavingNotes(false);
+    }
   };
+
+  const handleStatusChange = async (newStatus) => {
+    if (!workOrder?.workOrderId) return;
+    
+    try {
+      setIsUpdatingStatus(true);
+      await technicianAPI.updateWorkOrderStatus(workOrder.workOrderId, newStatus);
+      alert(`Work order status updated to ${newStatus}`);
+      onStatusChange?.(newStatus);
+      onBack?.();
+    } catch (err) {
+      console.error('Error updating status:', err);
+      alert('Failed to update status');
+    } finally {
+      setIsUpdatingStatus(false);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <Container>
+        <Header>
+          <BackButton onClick={onBack}>
+            <FaArrowLeft />
+          </BackButton>
+          <HeaderContent>
+            <WorkOrderId>Loading...</WorkOrderId>
+          </HeaderContent>
+        </Header>
+        <Content>
+          <Section>
+            <div style={{ textAlign: 'center', padding: '40px', color: '#666' }}>
+              Loading work order details...
+            </div>
+          </Section>
+        </Content>
+      </Container>
+    );
+  }
+
+  if (!detail) {
+    return (
+      <Container>
+        <Header>
+          <BackButton onClick={onBack}>
+            <FaArrowLeft />
+          </BackButton>
+          <HeaderContent>
+            <WorkOrderId>Error</WorkOrderId>
+          </HeaderContent>
+        </Header>
+        <Content>
+          <Section>
+            <div style={{ textAlign: 'center', padding: '40px', color: '#ef4444' }}>
+              Failed to load work order details
+            </div>
+          </Section>
+        </Content>
+      </Container>
+    );
+  }
 
   return (
     <Container>
@@ -318,9 +408,9 @@ const TechnicianWorkOrderDetail = ({ workOrder, onBack, onStatusChange }) => {
           <FaArrowLeft />
         </BackButton>
         <HeaderContent>
-          <WorkOrderId>{mockDetail.id}</WorkOrderId>
-          <StatusBadge $status={mockDetail.status}>
-            {mockDetail.status}
+          <WorkOrderId>WO-{detail.id}</WorkOrderId>
+          <StatusBadge $status={detail.status}>
+            {detail.status}
           </StatusBadge>
         </HeaderContent>
       </Header>
@@ -335,19 +425,23 @@ const TechnicianWorkOrderDetail = ({ workOrder, onBack, onStatusChange }) => {
           <InfoGrid>
             <InfoItem>
               <InfoLabel>License Plate</InfoLabel>
-              <InfoValue $highlight>{mockDetail.vehicle.licensePlate}</InfoValue>
+              <InfoValue $highlight>{detail.Vehicle?.license_plate || 'N/A'}</InfoValue>
             </InfoItem>
             <InfoItem>
               <InfoLabel>Vehicle</InfoLabel>
-              <InfoValue>{mockDetail.vehicle.model}</InfoValue>
+              <InfoValue>{`${detail.Vehicle?.make || ''} ${detail.Vehicle?.model || ''}`.trim() || 'N/A'}</InfoValue>
+            </InfoItem>
+            <InfoItem>
+              <InfoLabel>Year</InfoLabel>
+              <InfoValue>{detail.Vehicle?.year || 'N/A'}</InfoValue>
             </InfoItem>
             <InfoItem>
               <InfoLabel>Color</InfoLabel>
-              <InfoValue>{mockDetail.vehicle.color}</InfoValue>
+              <InfoValue>{detail.Vehicle?.color || 'N/A'}</InfoValue>
             </InfoItem>
             <InfoItem>
               <InfoLabel>Mileage</InfoLabel>
-              <InfoValue>{mockDetail.vehicle.mileage}</InfoValue>
+              <InfoValue>{detail.Vehicle?.mileage ? `${detail.Vehicle.mileage.toLocaleString()} km` : 'N/A'}</InfoValue>
             </InfoItem>
           </InfoGrid>
         </Section>
@@ -361,11 +455,11 @@ const TechnicianWorkOrderDetail = ({ workOrder, onBack, onStatusChange }) => {
           <InfoGrid>
             <InfoItem>
               <InfoLabel>Name</InfoLabel>
-              <InfoValue>{mockDetail.customer.name}</InfoValue>
+              <InfoValue>{detail.Vehicle?.Customer?.name || 'N/A'}</InfoValue>
             </InfoItem>
             <InfoItem>
               <InfoLabel>Phone</InfoLabel>
-              <InfoValue $highlight>{mockDetail.customer.phone}</InfoValue>
+              <InfoValue $highlight>{detail.Vehicle?.Customer?.phone || 'N/A'}</InfoValue>
             </InfoItem>
           </InfoGrid>
         </Section>
@@ -373,19 +467,37 @@ const TechnicianWorkOrderDetail = ({ workOrder, onBack, onStatusChange }) => {
         {/* Action Buttons */}
         <Section>
           <ActionButtons>
-            <ActionButton 
-              $variant="waiting"
-              onClick={() => onStatusChange?.('WAITING_PARTS')}
-            >
-              Waiting for Parts
-            </ActionButton>
-            <ActionButton 
-              $variant="done"
-              onClick={() => onStatusChange?.('COMPLETED')}
-            >
-              <FaCheckCircle />
-              Mark as Done
-            </ActionButton>
+            {detail.status === 'OPEN' ? (
+              <>
+                <ActionButton 
+                  $variant="start"
+                  onClick={() => handleStatusChange('IN_PROGRESS')}
+                  disabled={isUpdatingStatus}
+                  style={{ gridColumn: '1 / -1', background: '#10b981', color: 'white' }}
+                >
+                  <FaCheckCircle />
+                  {isUpdatingStatus ? 'Starting...' : 'Start Work Order'}
+                </ActionButton>
+              </>
+            ) : (
+              <>
+                <ActionButton 
+                  $variant="waiting"
+                  onClick={() => handleStatusChange('WAITING_PARTS')}
+                  disabled={isUpdatingStatus}
+                >
+                  {isUpdatingStatus ? 'Updating...' : 'Waiting for Parts'}
+                </ActionButton>
+                <ActionButton 
+                  $variant="done"
+                  onClick={() => handleStatusChange('COMPLETED')}
+                  disabled={isUpdatingStatus}
+                >
+                  <FaCheckCircle />
+                  {isUpdatingStatus ? 'Updating...' : 'Mark as Done'}
+                </ActionButton>
+              </>
+            )}
           </ActionButtons>
         </Section>
 
@@ -415,12 +527,18 @@ const TechnicianWorkOrderDetail = ({ workOrder, onBack, onStatusChange }) => {
             <SectionTitle>Parts Used</SectionTitle>
           </SectionHeader>
           <PartsList>
-            {mockDetail.parts.map(part => (
-              <PartItem key={part.id}>
-                <PartName>{part.name}</PartName>
-                <PartQuantity>{part.quantity}</PartQuantity>
-              </PartItem>
-            ))}
+            {parts.length > 0 ? (
+              parts.map(part => (
+                <PartItem key={part.id}>
+                  <PartName>{part.name}</PartName>
+                  <PartQuantity>{part.quantity}</PartQuantity>
+                </PartItem>
+              ))
+            ) : (
+              <div style={{ textAlign: 'center', color: '#999', padding: '20px' }}>
+                No parts assigned
+              </div>
+            )}
           </PartsList>
         </Section>
 
@@ -435,9 +553,9 @@ const TechnicianWorkOrderDetail = ({ workOrder, onBack, onStatusChange }) => {
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
           />
-          <SaveNotesButton onClick={handleSaveNotes}>
+          <SaveNotesButton onClick={handleSaveNotes} disabled={isSavingNotes}>
             <FaSave />
-            Save Notes
+            {isSavingNotes ? 'Saving...' : 'Save Notes'}
           </SaveNotesButton>
         </Section>
       </Content>

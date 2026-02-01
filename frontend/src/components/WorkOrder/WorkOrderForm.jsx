@@ -292,6 +292,7 @@ const WorkOrderForm = ({ workOrder, onClose, onSuccess }) => {
     technician_id: '',
     status: 'OPEN',
     start_time: '',
+    end_time: '',
     estimated_duration: 90
   });
   
@@ -347,6 +348,26 @@ const WorkOrderForm = ({ workOrder, onClose, onSuccess }) => {
       loadVehiclesByCustomer(formData.customer_id);
     }
   }, [formData.customer_id, customerType]);
+
+  // Auto-calculate end_time when start_time or estimated_duration changes
+  useEffect(() => {
+    if (formData.start_time && formData.estimated_duration) {
+      const startDate = new Date(formData.start_time);
+      const endDate = new Date(startDate.getTime() + formData.estimated_duration * 60000);
+      
+      // Format to local datetime-local format (YYYY-MM-DDTHH:mm)
+      const year = endDate.getFullYear();
+      const month = String(endDate.getMonth() + 1).padStart(2, '0');
+      const day = String(endDate.getDate()).padStart(2, '0');
+      const hours = String(endDate.getHours()).padStart(2, '0');
+      const minutes = String(endDate.getMinutes()).padStart(2, '0');
+      const endTimeStr = `${year}-${month}-${day}T${hours}:${minutes}`;
+      
+      setFormData(prev => ({ ...prev, end_time: endTimeStr }));
+    } else if (!formData.start_time) {
+      setFormData(prev => ({ ...prev, end_time: '' }));
+    }
+  }, [formData.start_time, formData.estimated_duration]);
 
   // API Load Functions
   const loadCustomers = async () => {
@@ -518,6 +539,7 @@ const WorkOrderForm = ({ workOrder, onClose, onSuccess }) => {
         technician_id: formData.technician_id || null,
         status: formData.status,
         start_time: formData.start_time || null,
+        end_time: formData.end_time || null,
         estimated_duration: formData.estimated_duration || null,
         items: [
           ...services.map(s => ({ 
@@ -760,19 +782,18 @@ const WorkOrderForm = ({ workOrder, onClose, onSuccess }) => {
                 />
               </FormGroup>
               <FormGroup>
-                <Label>Estimated Duration (minutes)</Label>
+                <Label>End Time (Auto-calculated)</Label>
                 <Input
-                  type="number"
-                  min="15"
-                  step="15"
-                  value={formData.estimated_duration}
-                  onChange={(e) => setFormData({...formData, estimated_duration: parseInt(e.target.value) || 90})}
-                  placeholder="90"
+                  type="datetime-local"
+                  value={formData.end_time}
+                  disabled
+                  style={{ background: '#f0f0f0', cursor: 'not-allowed' }}
                 />
                 <div style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
+                  Duration: {formData.estimated_duration} minutes
                   {services.length > 0 && services.some(s => s.service_id) 
-                    ? 'Auto-calculated from selected services' 
-                    : 'Will be calculated automatically when services are selected'}
+                    ? ' (from services)' 
+                    : ' (default)'}
                 </div>
               </FormGroup>
             </Grid>

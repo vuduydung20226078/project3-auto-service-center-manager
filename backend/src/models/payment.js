@@ -4,8 +4,11 @@ module.exports = (sequelize, DataTypes) => {
         id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
         invoice_id: { type: DataTypes.INTEGER, allowNull: false },
         amount: { type: DataTypes.DECIMAL(12, 2), allowNull: false },
-        method: { type: DataTypes.ENUM('CASH', 'CARD', 'BANK_TRANSFER') },
-        paid_at: { type: DataTypes.DATE, allowNull: false, defaultValue: DataTypes.NOW },
+        method: { type: DataTypes.ENUM('MOMO', 'VNPAY', 'CASH', 'CARD'), allowNull: false, defaultValue: 'CASH', field: 'provider' },
+        status: { type: DataTypes.ENUM('PENDING', 'SUCCESS', 'FAILED', 'EXPIRED'), allowNull: false, defaultValue: 'PENDING' },
+        transaction_ref: { type: DataTypes.STRING(100), allowNull: true, unique: true },
+        raw_response: { type: DataTypes.JSON, allowNull: true },
+        paid_at: { type: DataTypes.DATE, allowNull: true },
         received_by: { type: DataTypes.INTEGER }
     }, {
         tableName: 'payments',

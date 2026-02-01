@@ -19,6 +19,8 @@ module.exports = (sequelize, DataTypes) => {
         WorkOrderItem.belongsTo(models.WorkOrder, { foreignKey: 'work_order_id' });
         // Polymorphic: when item_type = 'SERVICE' => item_id references services_catalog
         // when item_type = 'PART' => item_id references parts_catalog
+        WorkOrderItem.belongsTo(models.Service, { foreignKey: 'item_id', constraints: false, as: 'service' });
+        WorkOrderItem.belongsTo(models.Part, { foreignKey: 'item_id', constraints: false, as: 'part' });
     };
 
     return WorkOrderItem;
