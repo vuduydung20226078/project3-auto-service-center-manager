@@ -134,11 +134,10 @@ class StocksRepository {
         if (notes || userId) {
             await this.createEntry({
                 part_id: partId,
-                quantity_change: -amount,
-                entry_type: 'OUT',
-                ref_type: 'WORK_ORDER',
-                notes,
-                performed_by: userId
+                qty: amount,
+                type: 'OUT',
+                ref_type: 'WO',
+                created_by: userId
             }, transaction);
         }
 

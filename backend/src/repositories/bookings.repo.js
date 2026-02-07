@@ -98,7 +98,7 @@ class BookingsRepository {
 
         return await Booking.findAll({
             where,
-            order: [['scheduled_at', 'ASC']],
+            order: [['createdAt', 'DESC']],
             include: [
                 {
                     model: Customer,

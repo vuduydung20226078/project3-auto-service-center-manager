@@ -448,12 +448,11 @@ const CreateWorkOrderFromBookingModal = ({ booking, onClose, onSuccess }) => {
         booking_id: booking.id,
         technician_id: parseInt(technician_id),
         vehicle_id: booking.vehicle_id,
-        start_time: booking.scheduled_at, // Use booking's scheduled time
+        start_time: booking.scheduled_time, // Use booking's scheduled time
         estimated_duration: estimatedDuration,
         items: items.map(item => ({
-          type: item.type,
-          service_id: item.type === 'service' ? parseInt(item.service_id) : undefined,
-          part_id: item.type === 'part' ? parseInt(item.part_id) : undefined,
+          item_type: item.type.toUpperCase(), // SERVICE or PART
+          item_id: item.type === 'service' ? parseInt(item.service_id) : parseInt(item.part_id),
           description: item.description,
           quantity: item.type === 'service' ? 1 : parseInt(item.quantity), // Services always quantity 1
           price: parseFloat(item.price)
@@ -523,22 +522,22 @@ const CreateWorkOrderFromBookingModal = ({ booking, onClose, onSuccess }) => {
               </InfoItem>
               <InfoItem>
                 <InfoLabel>Customer:</InfoLabel>
-                <InfoValue>{booking.Customer?.name || 'N/A'}</InfoValue>
+                <InfoValue>{booking.customer?.name || 'N/A'}</InfoValue>
               </InfoItem>
               <InfoItem>
                 <InfoLabel>Phone:</InfoLabel>
-                <InfoValue>{booking.Customer?.phone || 'N/A'}</InfoValue>
+                <InfoValue>{booking.customer?.phone || 'N/A'}</InfoValue>
               </InfoItem>
               <InfoItem>
                 <InfoLabel>Vehicle:</InfoLabel>
                 <InfoValue>
-                  {booking.Vehicle?.license_plate} - {booking.Vehicle?.year} {booking.Vehicle?.make} {booking.Vehicle?.model}
+                  {booking.vehicle?.license_plate} - {booking.vehicle?.year} {booking.vehicle?.make} {booking.vehicle?.model}
                 </InfoValue>
               </InfoItem>
               <InfoItem>
                 <InfoLabel>Scheduled:</InfoLabel>
                 <InfoValue>
-                  {formatDate(booking.scheduled_at)} at {formatTime(booking.scheduled_at)}
+                  {formatDate(booking.scheduled_time)} at {formatTime(booking.scheduled_time)}
                 </InfoValue>
               </InfoItem>
             </InfoGrid>
@@ -576,7 +575,7 @@ const CreateWorkOrderFromBookingModal = ({ booking, onClose, onSuccess }) => {
               placeholder="90"
             />
             <div style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
-              Scheduled: {formatDate(booking.scheduled_at)} at {formatTime(booking.scheduled_at)}
+              Scheduled: {formatDate(booking.scheduled_time)} at {formatTime(booking.scheduled_time)}
             </div>
           </FormGroup>
 

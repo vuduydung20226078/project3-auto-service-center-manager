@@ -61,7 +61,7 @@ class CustomersRepository {
             include: [
                 {
                     model: User,
-                    attributes: ['id', 'email', 'role']
+                    attributes: ['id', 'email', 'role_id']
                 }
             ],
             order: [['name', 'ASC']]

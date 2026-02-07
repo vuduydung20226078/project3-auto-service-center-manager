@@ -543,18 +543,18 @@ const WorkOrderForm = ({ workOrder, onClose, onSuccess }) => {
         estimated_duration: formData.estimated_duration || null,
         items: [
           ...services.map(s => ({ 
-            service_id: s.service_id, 
+            item_type: 'SERVICE',
+            item_id: s.service_id, 
             quantity: 1, // Services always have quantity 1
             price: s.price, 
-            description: s.description || '',
-            type: 'service' 
+            description: s.description || ''
           })),
           ...parts.map(p => ({ 
-            part_id: p.part_id, 
+            item_type: 'PART',
+            item_id: p.part_id, 
             quantity: p.quantity, 
             price: p.price, 
-            description: p.description || '',
-            type: 'part' 
+            description: p.description || ''
           }))
         ]
       };

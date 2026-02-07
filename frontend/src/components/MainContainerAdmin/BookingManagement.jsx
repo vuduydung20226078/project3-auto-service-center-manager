@@ -179,17 +179,21 @@ const StatusBadge = styled.span`
   font-weight: 600;
   background-color: ${props => {
     switch (props.status) {
-      case 'CONFIRMED': return '#d4edda';
-      case 'PENDING': return '#fff3cd';
-      case 'CANCELLED': return '#f8d7da';
+      case 'Confirmed': return '#d4edda';
+      case 'Pending': return '#fff3cd';
+      case 'Cancelled': return '#f8d7da';
+      case 'In Service': return '#cfe2ff';
+      case 'Completed': return '#d1e7dd';
       default: return '#e9ecef';
     }
   }};
   color: ${props => {
     switch (props.status) {
-      case 'CONFIRMED': return '#155724';
-      case 'PENDING': return '#856404';
-      case 'CANCELLED': return '#721c24';
+      case 'Confirmed': return '#155724';
+      case 'Pending': return '#856404';
+      case 'Cancelled': return '#721c24';
+      case 'In Service': return '#084298';
+      case 'Completed': return '#0f5132';
       default: return '#333';
     }
   }};
@@ -254,9 +258,9 @@ const BookingManagement = () => {
 
   const stats = {
     total: bookings.length,
-    confirmed: bookings.filter(b => b.status === 'CONFIRMED').length,
-    pending: bookings.filter(b => b.status === 'PENDING').length,
-    cancelled: bookings.filter(b => b.status === 'CANCELLED').length
+    confirmed: bookings.filter(b => b.status === 'Confirmed').length,
+    pending: bookings.filter(b => b.status === 'Pending').length,
+    cancelled: bookings.filter(b => b.status === 'Cancelled').length
   };
 
   const formatDate = (dateString) => {
@@ -282,8 +286,8 @@ const BookingManagement = () => {
   };
 
   const filteredBookings = bookings.filter(booking => {
-    const customerName = booking.Customer?.name || '';
-    const licensePlate = booking.Vehicle?.license_plate || '';
+    const customerName = booking.customer?.name || '';
+    const licensePlate = booking.vehicle?.license_plate || '';
     
     const matchesSearch = 
       customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -300,7 +304,7 @@ const BookingManagement = () => {
   };
 
   const handleCreateWorkOrder = (booking) => {
-    if (booking.status !== 'CONFIRMED') {
+    if (booking.status !== 'Confirmed') {
       toast.warning('Please confirm the booking first before creating a work order');
       return;
     }
@@ -375,9 +379,11 @@ const BookingManagement = () => {
 
   const getStatusIcon = (status) => {
     switch (status) {
-      case 'CONFIRMED': return <FaCheckCircle />;
-      case 'PENDING': return <FaClock />;
-      case 'CANCELLED': return <FaTimesCircle />;
+      case 'Confirmed': return <FaCheckCircle />;
+      case 'Pending': return <FaClock />;
+      case 'Cancelled': return <FaTimesCircle />;
+      case 'In Service': return <FaWrench />;
+      case 'Completed': return <FaCheckCircle />;
       default: return null;
     }
   };
@@ -444,9 +450,11 @@ const BookingManagement = () => {
         </SearchBar>
         <FilterSelect value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
           <option>All Status</option>
-          <option>CONFIRMED</option>
-          <option>PENDING</option>
-          <option>CANCELLED</option>
+          <option>Confirmed</option>
+          <option>Pending</option>
+          <option>Cancelled</option>
+          <option>In Service</option>
+          <option>Completed</option>
         </FilterSelect>
       </Controls>
 
@@ -481,18 +489,18 @@ const BookingManagement = () => {
                 <Tr key={booking.id}>
                   <Td>#{booking.id}</Td>
                   <Td>
-                    <div style={{ fontWeight: 600 }}>{booking.Customer?.name || 'N/A'}</div>
-                    <div style={{ fontSize: '12px', color: '#666' }}>{booking.Customer?.phone || 'N/A'}</div>
+                    <div style={{ fontWeight: 600 }}>{booking.customer?.name || 'N/A'}</div>
+                    <div style={{ fontSize: '12px', color: '#666' }}>{booking.customer?.phone || 'N/A'}</div>
                   </Td>
                   <Td>
-                    <div style={{ fontWeight: 600 }}>{booking.Vehicle?.license_plate || 'N/A'}</div>
+                    <div style={{ fontWeight: 600 }}>{booking.vehicle?.license_plate || 'N/A'}</div>
                     <div style={{ fontSize: '12px', color: '#666' }}>
-                      {booking.Vehicle?.year} {booking.Vehicle?.make} {booking.Vehicle?.model}
+                      {booking.vehicle?.year} {booking.vehicle?.make} {booking.vehicle?.model}
                     </div>
                   </Td>
                   <Td>
-                    <div style={{ fontWeight: 600 }}>{formatDate(booking.scheduled_at)}</div>
-                    <div style={{ fontSize: '12px', color: '#666' }}>{formatTime(booking.scheduled_at)}</div>
+                    <div style={{ fontWeight: 600 }}>{formatDate(booking.scheduled_time)}</div>
+                    <div style={{ fontSize: '12px', color: '#666' }}>{formatTime(booking.scheduled_time)}</div>
                   </Td>
                   <Td>
                     <StatusBadge status={booking.status}>
@@ -509,13 +517,13 @@ const BookingManagement = () => {
                         <FaEye />
                         <span>View</span>
                       </ActionButton>
-                      {booking.status === 'PENDING' && (
+                      {booking.status === 'Pending' && (
                         <ActionButton color="#10b981" onClick={() => handleConfirm(booking)}>
                           <FaCheckCircle />
                           <span>Confirm</span>
                         </ActionButton>
                       )}
-                      {booking.status === 'CONFIRMED' && !booking.work_order_id && (
+                      {booking.status === 'Confirmed' && !booking.work_order_id && (
                         <ActionButton color="#f59e0b" onClick={() => handleCreateWorkOrder(booking)}>
                           <FaWrench />
                           <span>Work Order</span>
@@ -527,7 +535,7 @@ const BookingManagement = () => {
                           <span>WO #{booking.work_order_id}</span>
                         </ActionButton>
                       )}
-                      {booking.status !== 'CANCELLED' && booking.status !== 'COMPLETED' && (
+                      {booking.status !== 'Cancelled' && booking.status !== 'Completed' && (
                         <ActionButton color="#ef4444" onClick={() => handleCancel(booking)}>
                           <FaTrash />
                           <span>Cancel</span>
