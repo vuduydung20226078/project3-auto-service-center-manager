@@ -21,7 +21,7 @@ class WorkOrdersRepository {
             include: [
                 {
                     model: Vehicle,
-                    attributes: ['id', 'license_plate', 'make', 'model'],
+                    attributes: ['id', 'license_plate', 'make', 'model', 'year', 'mileage'],
                     include: [
                         { model: Customer, attributes: ['id', 'name', 'phone', 'email'] }
                     ]
@@ -218,6 +218,16 @@ class WorkOrdersRepository {
 
         await item.destroy({ transaction });
         return item;
+    }
+
+    /**
+     * Delete all items for a work order
+     */
+    async deleteAllItems(workOrderId, transaction = null) {
+        await WorkOrderItem.destroy({
+            where: { work_order_id: workOrderId },
+            transaction
+        });
     }
 
     /**

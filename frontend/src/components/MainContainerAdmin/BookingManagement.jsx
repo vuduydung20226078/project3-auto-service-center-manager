@@ -178,22 +178,26 @@ const StatusBadge = styled.span`
   font-size: 13px;
   font-weight: 600;
   background-color: ${props => {
-    switch (props.status) {
-      case 'Confirmed': return '#d4edda';
-      case 'Pending': return '#fff3cd';
-      case 'Cancelled': return '#f8d7da';
-      case 'In Service': return '#cfe2ff';
-      case 'Completed': return '#d1e7dd';
+    const status = props.status?.toUpperCase();
+    switch (status) {
+      case 'PENDING': return '#fff3cd';
+      case 'CONFIRMED': return '#d4edda';
+      case 'IN SERVICE':
+      case 'IN_PROGRESS': return '#cfe2ff';
+      case 'COMPLETED': return '#d1e7dd';
+      case 'CANCELLED': return '#f8d7da';
       default: return '#e9ecef';
     }
   }};
   color: ${props => {
-    switch (props.status) {
-      case 'Confirmed': return '#155724';
-      case 'Pending': return '#856404';
-      case 'Cancelled': return '#721c24';
-      case 'In Service': return '#084298';
-      case 'Completed': return '#0f5132';
+    const status = props.status?.toUpperCase();
+    switch (status) {
+      case 'PENDING': return '#856404';
+      case 'CONFIRMED': return '#155724';
+      case 'IN SERVICE':
+      case 'IN_PROGRESS': return '#084298';
+      case 'COMPLETED': return '#0f5132';
+      case 'CANCELLED': return '#721c24';
       default: return '#333';
     }
   }};
@@ -523,16 +527,16 @@ const BookingManagement = () => {
                           <span>Confirm</span>
                         </ActionButton>
                       )}
-                      {booking.status === 'Confirmed' && !booking.work_order_id && (
+                      {booking.status === 'Confirmed' && !booking.WorkOrder?.id && (
                         <ActionButton color="#f59e0b" onClick={() => handleCreateWorkOrder(booking)}>
                           <FaWrench />
                           <span>Work Order</span>
                         </ActionButton>
                       )}
-                      {booking.work_order_id && (
+                      {booking.WorkOrder?.id && (
                         <ActionButton color="#10b981" style={{ cursor: 'default', opacity: 0.7 }}>
                           <FaCheckCircle />
-                          <span>WO #{booking.work_order_id}</span>
+                          <span>WO #{booking.WorkOrder.id}</span>
                         </ActionButton>
                       )}
                       {booking.status !== 'Cancelled' && booking.status !== 'Completed' && (
@@ -555,8 +559,8 @@ const BookingManagement = () => {
           booking={selectedBooking}
           onClose={() => setShowDetailModal(false)}
           onCreateWorkOrder={() => {
-            if (selectedBooking.work_order_id) {
-              toast.info(`Work order #${selectedBooking.work_order_id} already exists for this booking`);
+            if (selectedBooking.WorkOrder?.id) {
+              toast.info(`Work order #${selectedBooking.WorkOrder.id} already exists for this booking`);
             } else if (selectedBooking.status === 'CONFIRMED') {
               setShowDetailModal(false);
               setShowCreateWOModal(true);

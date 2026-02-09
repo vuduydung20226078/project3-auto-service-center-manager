@@ -155,11 +155,27 @@ const StatusBadge = styled.div`
   padding: 6px 12px;
   background: ${props => {
     const status = props.$status?.toUpperCase();
-    return status === 'CONFIRMED' ? '#dcfce7' : '#fef3c7';
+    switch (status) {
+      case 'PENDING': return '#fef3c7';
+      case 'CONFIRMED': return '#dcfce7';
+      case 'IN_PROGRESS':
+      case 'IN SERVICE': return '#dbeafe';
+      case 'COMPLETED': return '#e0e7ff';
+      case 'CANCELLED': return '#fee2e2';
+      default: return '#f3f4f6';
+    }
   }};
   color: ${props => {
     const status = props.$status?.toUpperCase();
-    return status === 'CONFIRMED' ? '#16a34a' : '#d97706';
+    switch (status) {
+      case 'PENDING': return '#d97706';
+      case 'CONFIRMED': return '#16a34a';
+      case 'IN_PROGRESS':
+      case 'IN SERVICE': return '#2563eb';
+      case 'COMPLETED': return '#6366f1';
+      case 'CANCELLED': return '#ef4444';
+      default: return '#666';
+    }
   }};
   border-radius: 6px;
   font-size: 12px;

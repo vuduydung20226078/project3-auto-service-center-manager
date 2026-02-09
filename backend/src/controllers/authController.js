@@ -12,13 +12,13 @@ exports.login = async (req, res) => {
         // Set refresh token cookie
         res.cookie('refreshToken', refreshToken, {
             httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'strict',
+            secure: process.env.NODE_ENV === 'production', // Use secure cookies in production
+            sameSite: 'strict', // CSRF protection
             maxAge: 7 * 24 * 60 * 60 * 1000,
             path: '/api/auth'
         });
 
-        res.json({ accessToken, user: { id: user.id, email: user.email, role: user.Role?.name || user.role, name: displayName || user.full_name || user.username, phone: user.phone, address: user.address } });
+        res.json({ accessToken, user: { id: user.id, email: user.email, role: user.Role?.name, name: displayName || user.full_name, phone: user.phone, address: user.address } });
     } catch (error) {
         console.error('Login error:', error);
         res.status(401).json({ message: error.message });
@@ -33,7 +33,7 @@ exports.register = async (req, res) => {
 
     try {
         // Delegate multi-step creation to orchestrator which handles transaction
-        const { user, customer } = await authOrchestrator.registerUserAndCustomer({ username, email, password });
+        const { user } = await authOrchestrator.registerUserAndCustomer({ username, email, password });
 
         // Create tokens and persist refresh token
         const tokens = await authService.createTokensForUser(user);
@@ -91,7 +91,12 @@ exports.logout = async (req, res) => {
             await authService.logout(refreshToken);
         }
 
-        res.clearCookie('refreshToken', { path: '/api/auth' });
+        res.clearCookie('refreshToken', {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'strict',
+            path: '/api/auth'
+        });
         res.status(204).send();
     } catch (error) {
         console.error('Logout error:', error);

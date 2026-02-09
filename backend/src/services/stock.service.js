@@ -42,15 +42,43 @@ class StockService {
      * Prepare stock entry data
      * Business logic: entry data formatting
      */
-    prepareStockEntry({ partId, quantity, entryType, refType, notes, userId }) {
+    prepareStockEntryData({ part_id, qty, type, ref_type, user_id }) {
         return {
-            part_id: partId,
-            qty: entryType === 'IN' ? quantity : -quantity,
-            type: entryType,
-            ref_type: refType,
-            notes,
-            created_by: userId
+            part_id: parseInt(part_id),
+            qty: parseInt(qty),
+            type: type,
+            ref_type: ref_type,
+            created_by: user_id
         };
+    }
+
+    /**
+     * Validate adjustment data
+     * Business logic: check if adjustment has required fields
+     */
+    validateAdjustmentData(location, target_location) {
+        if (!location || !target_location) {
+            throw new Error('Adjustment requires both source location and target location');
+        }
+        if (location === target_location) {
+            throw new Error('Source and target locations cannot be the same');
+        }
+        return true;
+    }
+
+    /**
+     * Generate success message based on operation type
+     * Business logic: user-facing message generation
+     */
+    generateSuccessMessage(ref_type, type, qty, location, target_location) {
+        if (ref_type === 'ADJ') {
+            return `Adjusted ${qty} items from ${location} to ${target_location}`;
+        } else if (type === 'IN') {
+            return `Added ${qty} items to stock`;
+        } else if (type === 'OUT') {
+            return `Removed ${qty} items from stock`;
+        }
+        return 'Stock entry created successfully';
     }
 }
 

@@ -82,12 +82,17 @@ class WorkOrderService {
      * Business logic: data transformation
      */
     prepareItemData(item, workOrderId) {
+        const quantity = parseInt(item.quantity || 1, 10);
+        const unitPrice = parseFloat(item.unit_price || 0);
+        const lineTotal = quantity * unitPrice;
+
         return {
             work_order_id: workOrderId,
             item_type: item.item_type,
             item_id: item.item_id,
-            quantity: item.quantity || 1,
-            unit_price: item.unit_price,
+            quantity: quantity,
+            unit_price: unitPrice,
+            line_total: lineTotal,
             description: item.description || null
         };
     }

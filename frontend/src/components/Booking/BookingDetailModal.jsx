@@ -215,11 +215,22 @@ const BookingDetailModal = ({ booking, onClose, onCreateWorkOrder, onConfirmBook
   };
 
   const getStatusColor = (status) => {
-    switch (status) {
-      case 'CONFIRMED': return { bg: '#d4edda', color: '#155724' };
-      case 'PENDING': return { bg: '#fff3cd', color: '#856404' };
-      case 'CANCELLED': return { bg: '#f8d7da', color: '#721c24' };
-      default: return { bg: '#e9ecef', color: '#495057' };
+    const normalizedStatus = status?.toUpperCase();
+    switch (normalizedStatus) {
+      case 'PENDING': 
+        return { bg: '#fff3cd', color: '#856404', icon: '⏳' };
+      case 'CONFIRMED': 
+        return { bg: '#d4edda', color: '#155724', icon: '✓' };
+      case 'IN_PROGRESS':
+      case 'IN SERVICE':
+      case 'IN_SERVICE':
+        return { bg: '#cfe2ff', color: '#084298', icon: '🔧' };
+      case 'COMPLETED': 
+        return { bg: '#d1e7dd', color: '#0f5132', icon: '✔' };
+      case 'CANCELLED': 
+        return { bg: '#f8d7da', color: '#721c24', icon: '✕' };
+      default: 
+        return { bg: '#e9ecef', color: '#495057', icon: '●' };
     }
   };
 
@@ -242,7 +253,7 @@ const BookingDetailModal = ({ booking, onClose, onCreateWorkOrder, onConfirmBook
           <StatusSection style={{ backgroundColor: statusColors.bg }}>
             <StatusLabel style={{ color: statusColors.color }}>Current Status</StatusLabel>
             <StatusValue style={{ color: statusColors.color }}>
-              <FaCheckCircle />
+              <span>{statusColors.icon}</span>
               {booking.status}
             </StatusValue>
           </StatusSection>
@@ -255,11 +266,11 @@ const BookingDetailModal = ({ booking, onClose, onCreateWorkOrder, onConfirmBook
             <InfoGrid>
               <InfoItem>
                 <InfoLabel>Scheduled Date</InfoLabel>
-                <InfoValue>{formatDate(booking.scheduled_at || booking.scheduledDate)}</InfoValue>
+                <InfoValue>{booking.scheduled_at ? formatDate(booking.scheduled_at) : 'Invalid Date'}</InfoValue>
               </InfoItem>
               <InfoItem>
                 <InfoLabel>Scheduled Time</InfoLabel>
-                <InfoValue>{formatTime(booking.scheduled_at || booking.scheduledTime)}</InfoValue>
+                <InfoValue>{booking.scheduled_at ? formatTime(booking.scheduled_at) : 'Invalid Date'}</InfoValue>
               </InfoItem>
               <InfoItem style={{ gridColumn: '1 / -1' }}>
                 <InfoLabel>Notes</InfoLabel>
@@ -298,12 +309,12 @@ const BookingDetailModal = ({ booking, onClose, onCreateWorkOrder, onConfirmBook
             <InfoGrid>
               <InfoItem>
                 <InfoLabel>License Plate</InfoLabel>
-                <InfoValue>{booking.Vehicle?.license_plate || booking.vehicle?.plate || 'N/A'}</InfoValue>
+                <InfoValue>{booking.Vehicle?.license_plate || booking.vehicle?.license_plate || 'N/A'}</InfoValue>
               </InfoItem>
               <InfoItem>
                 <InfoLabel>Model</InfoLabel>
                 <InfoValue>
-                  {booking.Vehicle?.year || booking.vehicle?.year || ''} {booking.Vehicle?.make || ''} {booking.Vehicle?.model || booking.vehicle?.model || 'N/A'}
+                  {booking.Vehicle?.year || booking.vehicle?.year || ''} {booking.Vehicle?.make || booking.vehicle?.make || ''} {booking.Vehicle?.model || booking.vehicle?.model || 'N/A'}
                 </InfoValue>
               </InfoItem>
             </InfoGrid>

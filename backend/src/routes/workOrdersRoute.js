@@ -21,6 +21,9 @@ router.post('/from-booking', rbac('Advisor', 'Admin'), ctrl.createFromBooking);
 // Lấy chi tiết work order 
 router.get('/:id', rbac('Advisor', 'Tech', 'Admin', 'Accountant'), ctrl.get);
 
+// Cập nhật work order
+router.put('/:id', rbac('Advisor', 'Admin'), ctrl.update);
+
 // Thêm item (Service/Part) vào work order
 router.post('/:id/items', rbac('Advisor', 'Admin'), ctrl.addItem);
 

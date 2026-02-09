@@ -401,17 +401,24 @@ const PaymentPage = () => {
         <Section>
           <SectionTitle>Services & Parts</SectionTitle>
           <ItemsList>
-            {workOrderDetails?.WorkOrderItems?.map((item, index) => (
-              <ItemRow key={index}>
-                <ItemType type={item.item_type}>{item.item_type}</ItemType>
-                <ItemDetails>
-                  <ItemName>{item.details?.name || item.description}</ItemName>
-                  <ItemQty>{item.quantity}</ItemQty>
-                  <ItemPrice>{formatCurrency(item.unit_price)}</ItemPrice>
-                  <ItemTotal>{formatCurrency(item.line_total)}</ItemTotal>
-                </ItemDetails>
-              </ItemRow>
-            ))}
+            {workOrderDetails?.WorkOrderItems?.map((item, index) => {
+              const itemName = item.service?.name || item.part?.name || item.description || 'N/A';
+              const quantity = parseInt(item.quantity) || 1;
+              const unitPrice = parseFloat(item.unit_price) || 0;
+              const lineTotal = quantity * unitPrice;
+              
+              return (
+                <ItemRow key={index}>
+                  <ItemType type={item.item_type}>{item.item_type}</ItemType>
+                  <ItemDetails>
+                    <ItemName>{itemName}</ItemName>
+                    <ItemQty>{quantity}</ItemQty>
+                    <ItemPrice>{formatCurrency(unitPrice)}</ItemPrice>
+                    <ItemTotal>{formatCurrency(lineTotal)}</ItemTotal>
+                  </ItemDetails>
+                </ItemRow>
+              );
+            })}
           </ItemsList>
         </Section>
 

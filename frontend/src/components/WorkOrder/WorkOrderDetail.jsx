@@ -390,15 +390,22 @@ const WorkOrderDetail = ({ workOrder, onClose, onRefresh }) => {
                     </tr>
                   </thead>
                   <tbody>
-                    {data.items.map((item, index) => (
-                      <tr key={index}>
-                        <Td>{item.item_type}</Td>
-                        <Td>{item.name || item.description || 'N/A'}</Td>
-                        <Td>{item.quantity}</Td>
-                        <Td>{parseFloat(item.unit_price || 0).toFixed(0)} VND</Td>
-                        <Td>{parseFloat(item.line_total || 0).toFixed(0)} VND</Td>
-                      </tr>
-                    ))}
+                    {data.items.map((item, index) => {
+                      const itemName = item.service?.name || item.part?.name || item.description || 'N/A';
+                      const quantity = parseInt(item.quantity) || 1;
+                      const unitPrice = parseFloat(item.unit_price) || 0;
+                      const lineTotal = quantity * unitPrice;
+                      
+                      return (
+                        <tr key={index}>
+                          <Td>{item.item_type}</Td>
+                          <Td>{itemName}</Td>
+                          <Td>{quantity}</Td>
+                          <Td>{unitPrice.toFixed(0)} VND</Td>
+                          <Td>{lineTotal.toFixed(0)} VND</Td>
+                        </tr>
+                      );
+                    })}
                     <TotalRow>
                       <Td colSpan="4" style={{ textAlign: 'right' }}>Total:</Td>
                       <Td>{parseFloat(data.total_amount || 0).toFixed(0)} VND</Td>

@@ -455,7 +455,7 @@ const CreateWorkOrderFromBookingModal = ({ booking, onClose, onSuccess }) => {
           item_id: item.type === 'service' ? parseInt(item.service_id) : parseInt(item.part_id),
           description: item.description,
           quantity: item.type === 'service' ? 1 : parseInt(item.quantity), // Services always quantity 1
-          price: parseFloat(item.price)
+          unit_price: parseFloat(item.price)
         }))
       });
       

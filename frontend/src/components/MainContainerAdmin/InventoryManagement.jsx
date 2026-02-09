@@ -428,7 +428,7 @@ const InventoryManagement = () => {
 
   const inventoryColumns = [
     { 
-      key: 'id', 
+      key: 'part_id', 
       label: 'ID', 
       type: 'text',
       width: '60px',

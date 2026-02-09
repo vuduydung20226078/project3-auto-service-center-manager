@@ -16,8 +16,8 @@ export const getAllBookings = async (filters = {}) => {
             id: b.id,
             customer_id: b.customer_id,
             vehicle_id: b.vehicle_id,
-            // API uses `scheduled_at`; frontend expects `scheduled_time`
-            scheduled_time: b.scheduled_time || b.scheduled_at,
+            scheduled_at: b.scheduled_at,
+            scheduled_time: b.scheduled_at, // Keep both for backward compatibility
             status: (function (s) {
                 if (!s) return s;
                 switch (s.toUpperCase()) {
@@ -32,11 +32,17 @@ export const getAllBookings = async (filters = {}) => {
             })(b.status),
             notes: b.notes,
             work_order_id: b.work_order_id,
-            createdAt: b.createdAt,
-            updatedAt: b.updatedAt,
+            createdAt: b.createdAt || b.created_at,
+            created_at: b.created_at || b.createdAt,
+            updatedAt: b.updatedAt || b.updated_at,
+            updated_at: b.updated_at || b.updatedAt,
             // Normalize nested relations to lowercase keys expected by UI
             customer: b.Customer || b.customer || null,
-            vehicle: b.Vehicle || b.vehicle || null
+            vehicle: b.Vehicle || b.vehicle || null,
+            Customer: b.Customer || b.customer || null, // Keep uppercase for compatibility
+            Vehicle: b.Vehicle || b.vehicle || null, // Keep uppercase for compatibility
+            WorkOrder: b.WorkOrder || b.workOrder || null,
+            workOrder: b.WorkOrder || b.workOrder || null
         });
 
         if (Array.isArray(raw)) return raw.map(normalize);
@@ -58,7 +64,8 @@ export const getBookingById = async (id) => {
             id: b.id,
             customer_id: b.customer_id,
             vehicle_id: b.vehicle_id,
-            scheduled_time: b.scheduled_time || b.scheduled_at,
+            scheduled_at: b.scheduled_at,
+            scheduled_time: b.scheduled_at, // Keep both for backward compatibility
             status: (function (s) {
                 if (!s) return s;
                 switch (s.toUpperCase()) {
@@ -73,10 +80,16 @@ export const getBookingById = async (id) => {
             })(b.status),
             notes: b.notes,
             work_order_id: b.work_order_id,
-            createdAt: b.createdAt,
-            updatedAt: b.updatedAt,
+            createdAt: b.createdAt || b.created_at,
+            created_at: b.created_at || b.createdAt,
+            updatedAt: b.updatedAt || b.updated_at,
+            updated_at: b.updated_at || b.updatedAt,
             customer: b.Customer || b.customer || null,
-            vehicle: b.Vehicle || b.vehicle || null
+            vehicle: b.Vehicle || b.vehicle || null,
+            Customer: b.Customer || b.customer || null, // Keep uppercase for compatibility
+            Vehicle: b.Vehicle || b.vehicle || null, // Keep uppercase for compatibility
+            WorkOrder: b.WorkOrder || b.workOrder || null,
+            workOrder: b.WorkOrder || b.workOrder || null
         });
 
         return normalize(b);

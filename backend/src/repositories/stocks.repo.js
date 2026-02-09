@@ -15,7 +15,25 @@ class StocksRepository {
             include: [
                 {
                     model: Part,
-                    attributes: ['id', 'name', 'unit_price', 'sku']
+                    attributes: ['id', 'name', 'unit_price', 'sku', 'unit']
+                }
+            ]
+        });
+    }
+
+    /**
+     * Find stock by part ID and location
+     */
+    async findByPartAndLocation(partId, location) {
+        return await Stock.findOne({
+            where: {
+                part_id: partId,
+                location: location || 'Default'
+            },
+            include: [
+                {
+                    model: Part,
+                    attributes: ['id', 'name', 'unit_price', 'sku', 'unit']
                 }
             ]
         });
@@ -36,7 +54,7 @@ class StocksRepository {
             include: [
                 {
                     model: Part,
-                    attributes: ['id', 'name', 'unit_price', 'sku']
+                    attributes: ['id', 'name', 'unit_price', 'sku', 'unit']
                 }
             ],
             order: [['part_id', 'ASC']]
@@ -54,7 +72,7 @@ class StocksRepository {
             include: [
                 {
                     model: Part,
-                    attributes: ['id', 'name', 'unit_price', 'sku']
+                    attributes: ['id', 'name', 'unit_price', 'sku', 'unit']
                 }
             ],
             order: [['qty', 'ASC']],
@@ -67,13 +85,17 @@ class StocksRepository {
      */
     async upsert(data, transaction = null) {
         const [stock, created] = await Stock.findOrCreate({
-            where: { part_id: data.part_id },
+            where: {
+                part_id: data.part_id,
+                location: data.location || 'Default'
+            },
             defaults: data,
             transaction
         });
 
-        if (!created) {
-            await stock.update(data, { transaction });
+        if (!created && data.qty !== undefined) {
+            // If stock exists and qty is provided, increment instead of replace
+            await stock.increment('qty', { by: data.qty, transaction });
         }
 
         return stock;
@@ -82,8 +104,13 @@ class StocksRepository {
     /**
      * Update stock quantity
      */
-    async updateQuantity(partId, quantity, transaction = null) {
-        const stock = await Stock.findOne({ where: { part_id: partId } });
+    async updateQuantity(partId, quantity, transaction = null, location = 'Default') {
+        const stock = await Stock.findOne({
+            where: {
+                part_id: partId,
+                location: location
+            }
+        });
         if (!stock) return null;
 
         await stock.update({ qty: quantity }, { transaction });
@@ -94,8 +121,14 @@ class StocksRepository {
      * Increment stock quantity
      * Pure data operation - validation should be done by orchestrator/service
      */
-    async incrementQuantity(partId, amount, notes = null, userId = null, transaction = null) {
-        const stock = await Stock.findOne({ where: { part_id: partId }, transaction });
+    async incrementQuantity(partId, amount, notes = null, userId = null, transaction = null, location = 'Default') {
+        const stock = await Stock.findOne({
+            where: {
+                part_id: partId,
+                location: location
+            },
+            transaction
+        });
         if (!stock) {
             return null; // Let caller handle not found
         }
@@ -106,11 +139,10 @@ class StocksRepository {
         if (notes || userId) {
             await this.createEntry({
                 part_id: partId,
-                quantity_change: amount,
-                entry_type: 'IN',
+                qty: amount,
+                type: 'IN',
                 ref_type: 'MANUAL',
-                notes,
-                performed_by: userId
+                created_by: userId
             }, transaction);
         }
 
@@ -121,8 +153,14 @@ class StocksRepository {
      * Decrement stock quantity
      * Pure data operation - validation should be done by orchestrator/service
      */
-    async decrementQuantity(partId, amount, notes = null, userId = null, transaction = null) {
-        const stock = await Stock.findOne({ where: { part_id: partId }, transaction });
+    async decrementQuantity(partId, amount, notes = null, userId = null, transaction = null, location = 'Default') {
+        const stock = await Stock.findOne({
+            where: {
+                part_id: partId,
+                location: location
+            },
+            transaction
+        });
         if (!stock) {
             return null; // Let caller handle not found
         }

@@ -253,7 +253,14 @@ const CreateInvoiceModal = ({ workOrder, onClose, onSuccess }) => {
       setLoading(true);
       const response = await invoicesApi.getWorkOrderDetails(workOrder.id);
       setWorkOrderDetails(response);
-      setItems(response.WorkOrderItems || []);
+      
+      // Calculate line_total for each item
+      const itemsWithTotal = (response.WorkOrderItems || []).map(item => ({
+        ...item,
+        line_total: (parseInt(item.quantity) || 1) * (parseFloat(item.unit_price) || 0)
+      }));
+      
+      setItems(itemsWithTotal);
     } catch (error) {
       console.error('Error loading work order details:', error);
       toast.error('Failed to load work order details');
@@ -378,34 +385,38 @@ const CreateInvoiceModal = ({ workOrder, onClose, onSuccess }) => {
                 </Tr>
               </Thead>
               <Tbody>
-                {items.map((item, index) => (
-                  <Tr key={index}>
-                    <Td>{item.item_type}</Td>
-                    <Td>{item.details?.name || item.description}</Td>
-                    <Td>
-                      <Input
-                        type="number"
-                        min="1"
-                        value={item.quantity}
-                        onChange={(e) => handleQuantityChange(index, e.target.value)}
-                      />
-                    </Td>
-                    <Td>
-                      <Input
-                        type="number"
-                        min="0"
-                        value={item.unit_price}
-                        onChange={(e) => handlePriceChange(index, e.target.value)}
-                      />
-                    </Td>
-                    <Td>{formatCurrency(item.line_total)}</Td>
-                    <Td>
-                      <DeleteButton onClick={() => handleDeleteItem(index)}>
-                        <FaTrash />
-                      </DeleteButton>
-                    </Td>
-                  </Tr>
-                ))}
+                {items.map((item, index) => {
+                  const itemName = item.service?.name || item.part?.name || item.description || 'N/A';
+                  
+                  return (
+                    <Tr key={index}>
+                      <Td>{item.item_type}</Td>
+                      <Td>{itemName}</Td>
+                      <Td>
+                        <Input
+                          type="number"
+                          min="1"
+                          value={item.quantity}
+                          onChange={(e) => handleQuantityChange(index, e.target.value)}
+                        />
+                      </Td>
+                      <Td>
+                        <Input
+                          type="number"
+                          min="0"
+                          value={item.unit_price}
+                          onChange={(e) => handlePriceChange(index, e.target.value)}
+                        />
+                      </Td>
+                      <Td>{formatCurrency(item.line_total)}</Td>
+                      <Td>
+                        <DeleteButton onClick={() => handleDeleteItem(index)}>
+                          <FaTrash />
+                        </DeleteButton>
+                      </Td>
+                    </Tr>
+                  );
+                })}
               </Tbody>
             </Table>
           </Section>

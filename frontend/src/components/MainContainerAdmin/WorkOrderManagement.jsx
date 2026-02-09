@@ -246,9 +246,16 @@ const WorkOrderManagement = () => {
     setShowDetail(true);
   };
 
-  const handleEdit = (workOrder) => {
-    setSelectedWorkOrder(workOrder);
-    setShowForm(true);
+  const handleEdit = async (workOrder) => {
+    try {
+      // Fetch full work order details with items
+      const fullWorkOrder = await workOrdersApi.getById(workOrder.id);
+      setSelectedWorkOrder(fullWorkOrder);
+      setShowForm(true);
+    } catch (error) {
+      console.error('Error fetching work order details:', error);
+      alert('Error loading work order details');
+    }
   };
 
   const handleComplete = async (workOrder) => {
@@ -368,19 +375,18 @@ const WorkOrderManagement = () => {
               {filteredOrders.map((wo) => (
                 <tr key={wo.id}>
                   <Td>#{wo.id}</Td>
-                  <Td>{wo.customer || 'N/A'}</Td>
-                      <Td>{(
-                        wo.customer?.name || wo.customer ||
-                        wo.booking?.customer?.name || wo.booking?.customer ||
-                        wo.vehicle?.Customer?.name || wo.vehicle?.customer?.name ||
-                        'Walk-in'
-                      )}</Td>
-                      <Td>{(
-                        wo.vehicle?.license_plate || wo.vehicle?.name || wo.vehicle || 'N/A'
-                      )}</Td>
-                      <Td>{(
-                        wo.technician?.User?.full_name || wo.technician?.user?.full_name || wo.technician?.full_name || 'Unassigned'
-                      )}</Td>
+                  <Td>{(
+                    wo.customer?.name || wo.customer ||
+                    wo.booking?.customer?.name || wo.booking?.customer ||
+                    wo.vehicle?.Customer?.name || wo.vehicle?.customer?.name ||
+                    'Walk-in'
+                  )}</Td>
+                  <Td>{(
+                    wo.vehicle?.license_plate || wo.vehicle?.name || wo.vehicle || 'N/A'
+                  )}</Td>
+                  <Td>{(
+                    wo.technician|| 'Unassigned'
+                  )}</Td>
                   <Td>
                     {wo.created_at 
                       ? new Date(wo.created_at).toLocaleString('en-US', {

@@ -107,6 +107,11 @@ class BookingsRepository {
                 {
                     model: Vehicle,
                     attributes: ['id', 'license_plate', 'make', 'model', 'year']
+                },
+                {
+                    model: WorkOrder,
+                    attributes: ['id', 'status', 'total_amount'],
+                    required: false // Left join - bookings without work orders will still be returned
                 }
             ]
         });

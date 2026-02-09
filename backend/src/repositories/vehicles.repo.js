@@ -82,13 +82,28 @@ class VehiclesRepository {
      * Find or create vehicle
      */
     async findOrCreate(vehicleData, transaction = null) {
-        const [vehicle, created] = await Vehicle.findOrCreate({
-            where: { license_plate: vehicleData.license_plate },
-            defaults: vehicleData,
-            transaction
-        });
+        // Try to find vehicle by license plate
+        const existingVehicle = await this.findByLicensePlate(vehicleData.license_plate);
 
-        return { vehicle, created };
+        // If vehicle exists
+        if (existingVehicle) {
+            // Check if it belongs to the same customer
+            if (existingVehicle.customer_id === vehicleData.customer_id) {
+                // Same customer, reuse vehicle
+                return { vehicle: existingVehicle, created: false };
+            } else {
+                // Different customer - this could be a mistake or shared vehicle issue
+                // For now, throw error to prevent data corruption
+                throw new Error(
+                    `Vehicle with license plate ${vehicleData.license_plate} already registered to another customer. ` +
+                    `If this is your vehicle, please contact support.`
+                );
+            }
+        }
+
+        // Create new vehicle
+        const vehicle = await this.create(vehicleData, transaction);
+        return { vehicle, created: true };
     }
 
     /**

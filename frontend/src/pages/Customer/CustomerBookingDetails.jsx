@@ -74,10 +74,12 @@ const StatusBadge = styled.div`
   font-weight: 500;
   background: ${props => {
     switch (props.status?.toUpperCase()) {
-      case 'CONFIRMED': return '#10b981';
-      case 'COMPLETED': return '#3b82f6';
-      case 'CANCELLED': return '#ef4444';
       case 'PENDING': return '#f59e0b';
+      case 'CONFIRMED': return '#10b981';
+      case 'IN_PROGRESS':
+      case 'IN SERVICE': return '#2563eb';
+      case 'COMPLETED': return '#6366f1';
+      case 'CANCELLED': return '#ef4444';
       default: return '#6b7280';
     }
   }};
@@ -561,16 +563,22 @@ const CustomerBookingDetails = () => {
             {services.length > 0 && (
               <>
                 <SubSectionTitle>Services</SubSectionTitle>
-                {services.map((item, index) => (
-                  <ServiceItem key={index}>
-                    <ServiceName>
-                      {item.service?.name || item.description || 'Service'}
-                    </ServiceName>
-                    <ServicePrice>
-                      {formatCurrency(item.line_total || item.unit_price)}
-                    </ServicePrice>
-                  </ServiceItem>
-                ))}
+                {services.map((item, index) => {
+                  const quantity = parseInt(item.quantity) || 1;
+                  const unitPrice = parseFloat(item.unit_price) || 0;
+                  const lineTotal = quantity * unitPrice;
+                  
+                  return (
+                    <ServiceItem key={index}>
+                      <ServiceName>
+                        {item.service?.name || item.description || 'Service'}
+                      </ServiceName>
+                      <ServicePrice>
+                        {formatCurrency(lineTotal)}
+                      </ServicePrice>
+                    </ServiceItem>
+                  );
+                })}
               </>
             )}
 
@@ -578,16 +586,22 @@ const CustomerBookingDetails = () => {
               <>
                 <SectionDivider />
                 <SubSectionTitle>Parts Replaced</SubSectionTitle>
-                {parts.map((item, index) => (
-                  <ServiceItem key={index}>
-                    <ServiceName>
-                      {item.part?.name || item.description || 'Part'} (x{item.quantity})
-                    </ServiceName>
-                    <ServicePrice>
-                      {formatCurrency(item.line_total)}
-                    </ServicePrice>
-                  </ServiceItem>
-                ))}
+                {parts.map((item, index) => {
+                  const quantity = parseInt(item.quantity) || 1;
+                  const unitPrice = parseFloat(item.unit_price) || 0;
+                  const lineTotal = quantity * unitPrice;
+                  
+                  return (
+                    <ServiceItem key={index}>
+                      <ServiceName>
+                        {item.part?.name || item.description || 'Part'} (x{quantity})
+                      </ServiceName>
+                      <ServicePrice>
+                        {formatCurrency(lineTotal)}
+                      </ServicePrice>
+                    </ServiceItem>
+                  );
+                })}
               </>
             )}
 

@@ -6,10 +6,10 @@ const ACCESS_EXPIRES = process.env.JWT_EXPIRES_IN || '15m';
 const REFRESH_EXPIRES_DAYS = 7;
 
 async function createTokensForUser(user) {
-    const displayName = user.full_name || user.name || user.username || null;
+    const displayName = user.full_name || null;
 
     const accessToken = jwt.sign(
-        { id: user.id, role: user.Role?.name || user.role, name: displayName, phone: user.phone, address: user.address },
+        { id: user.id, role: user.Role?.name, name: displayName, phone: user.phone, address: user.address },
         process.env.JWT_SECRET,
         { expiresIn: ACCESS_EXPIRES }
     );

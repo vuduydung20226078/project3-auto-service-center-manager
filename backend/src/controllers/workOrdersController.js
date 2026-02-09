@@ -4,9 +4,6 @@ const workOrderOrchestrator = require('../orchestrators/workOrder.orchestrator')
 // Tạo work order trực tiếp với items (walk-in customer)
 exports.create = async (req, res) => {
     const { vehicle_id, technician_id, status, items, start_time, end_time, estimated_duration } = req.body;
-    console.log('=== CREATE WORK ORDER REQUEST ===');
-    console.log('Body:', JSON.stringify(req.body, null, 2));
-    console.log('User:', req.user);
 
     try {
         const wo = await workOrderOrchestrator.createWorkOrderWithItems({
@@ -41,6 +38,14 @@ exports.createFromBooking = async (req, res) => {
     const { booking_id, technician_id, vehicle_id, items = [], start_time, estimated_duration } = req.body;
     const user_id = req.user?.id || 1;
 
+    console.log('Creating work order from booking:', {
+        booking_id,
+        technician_id,
+        vehicle_id,
+        items_count: items.length,
+        user_id
+    });
+
     try {
         const wo = await workOrderOrchestrator.createWorkOrderFromBooking({
             booking_id,
@@ -52,9 +57,12 @@ exports.createFromBooking = async (req, res) => {
             estimated_duration
         });
 
+        console.log('Work order created successfully:', { id: wo?.id, status: wo?.status });
+
         res.status(201).json(wo);
     } catch (error) {
         console.error('Error creating work order from booking:', error);
+        console.error('Error stack:', error.stack);
         res.status(500).json({
             message: error.message || 'Failed to create work order',
             error: error.message
@@ -71,6 +79,9 @@ exports.get = async (req, res) => {
 
         const plainWo = wo.get({ plain: true });
 
+        // Get customer info from booking or vehicle
+        const customerInfo = plainWo.Booking?.Customer || plainWo.Vehicle?.Customer || null;
+
         const formatted = {
             id: plainWo.id,
             customer: plainWo.Booking?.Customer?.name || plainWo.Vehicle?.Customer?.name || 'Walk-in',
@@ -82,12 +93,70 @@ exports.get = async (req, res) => {
             booking_id: plainWo.booking_id,
             technician_id: plainWo.technician_id,
             vehicle_id: plainWo.vehicle_id,
-            items: plainWo.WorkOrderItems || []
+            customer_id: customerInfo?.id || null,
+            start_time: plainWo.start_time,
+            end_time: plainWo.end_time,
+            estimated_duration: plainWo.estimated_duration,
+            items: plainWo.WorkOrderItems || [],
+            // Full customer and vehicle objects for edit form
+            customerDetails: customerInfo ? {
+                id: customerInfo.id,
+                name: customerInfo.name,
+                phone: customerInfo.phone,
+                email: customerInfo.email || '',
+                address: customerInfo.address || ''
+            } : null,
+            vehicleDetails: plainWo.Vehicle ? {
+                id: plainWo.Vehicle.id,
+                license_plate: plainWo.Vehicle.license_plate,
+                model: plainWo.Vehicle.model,
+                vin: plainWo.Vehicle.vin || '',
+                mileage: plainWo.Vehicle.mileage || '',
+                note: plainWo.Vehicle.note || ''
+            } : null
         };
 
         res.json(formatted);
     } catch (error) {
         res.status(500).json({ message: 'Server error', error: error.message });
+    }
+};
+
+// Cập nhật work order
+exports.update = async (req, res) => {
+    const { id } = req.params;
+    const { vehicle_id, technician_id, status, items, start_time, end_time, estimated_duration } = req.body;
+    console.log('=== UPDATE WORK ORDER REQUEST ===');
+    console.log('ID:', id);
+    console.log('Body:', JSON.stringify(req.body, null, 2));
+    console.log('User:', req.user);
+
+    try {
+        const wo = await workOrderOrchestrator.updateWorkOrderWithItems({
+            work_order_id: id,
+            vehicle_id,
+            technician_id,
+            status: status || 'OPEN',
+            items: items || [],
+            user_id: req.user.id,
+            start_time: start_time || null,
+            end_time: end_time || null,
+            estimated_duration: estimated_duration || 90
+        });
+        res.json(wo);
+    } catch (error) {
+        console.error('=== ERROR UPDATING WORK ORDER ===');
+        console.error('Error name:', error.name);
+        console.error('Error message:', error.message);
+        console.error('Full error:', error);
+        if (error.errors) {
+            console.error('Validation errors:', JSON.stringify(error.errors, null, 2));
+        }
+        res.status(500).json({
+            message: 'Server error',
+            error: error.message,
+            details: error.errors || null
+        });
     }
 };
 

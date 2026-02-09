@@ -55,6 +55,13 @@ class WorkOrderOrchestrator {
             // Step 4: Create work order (repository)
             const workOrder = await workOrdersRepo.create(workOrderData, managedTransaction);
 
+            console.log('Work order created:', { id: workOrder?.id, status: workOrder?.status });
+
+            if (!workOrder || !workOrder.id) {
+                console.error('Work order creation failed:', workOrder);
+                throw new Error('Failed to create work order - work order creation returned null or no ID');
+            }
+
             // Step 5: Create work order items and update stock (loop workflow)
             for (const item of items) {
                 // Prepare item data (service)
@@ -65,17 +72,18 @@ class WorkOrderOrchestrator {
 
                 // Decrease stock for parts (service check + validation + repository action)
                 if (workOrderService.shouldDecrementStock(item.item_type)) {
-                    // Validate stock availability (service)
-                    const stock = await stocksRepo.findByPartId(item.item_id, managedTransaction);
+                    // Validate stock availability (service) - use Default location for work orders
+                    const stock = await stocksRepo.findByPartAndLocation(item.item_id, 'Default');
                     await stockService.validateAvailability(stock, item.quantity || 1);
 
-                    // Decrement quantity (repository)
+                    // Decrement quantity (repository) - from Default location
                     await stocksRepo.decrementQuantity(
                         item.item_id,
                         item.quantity || 1,
                         `Used in Work Order #${workOrder.id}`,
                         user_id,
-                        managedTransaction
+                        managedTransaction,
+                        'Default'
                     );
                 }
             }
@@ -87,10 +95,17 @@ class WorkOrderOrchestrator {
 
             if (shouldManageTransaction) {
                 await managedTransaction.commit();
+                // After commit, query with full associations
+                const fullWorkOrder = await workOrdersRepo.findById(workOrder.id);
+                if (!fullWorkOrder) {
+                    console.error('Warning: Could not retrieve work order after commit, returning basic object');
+                    return workOrder; // Fallback to basic work order
+                }
+                return fullWorkOrder;
             }
 
-            // Return with associations
-            return await workOrdersRepo.findById(workOrder.id);
+            // If externally managed transaction, return basic work order
+            return workOrder;
         } catch (error) {
             if (shouldManageTransaction && managedTransaction) {
                 await managedTransaction.rollback();
@@ -121,6 +136,13 @@ class WorkOrderOrchestrator {
                 managedTransaction = await sequelize.transaction();
             }
 
+            // Calculate end_time from start_time + estimated_duration
+            let end_time = null;
+            if (start_time && estimated_duration) {
+                const startDate = new Date(start_time);
+                end_time = new Date(startDate.getTime() + estimated_duration * 60000); // estimated_duration in minutes
+            }
+
             // Step 1: Create work order with items (sub-workflow)
             const workOrder = await this.createWorkOrderWithItems({
                 booking_id,
@@ -130,13 +152,21 @@ class WorkOrderOrchestrator {
                 items,
                 user_id,
                 start_time,
+                end_time,
                 estimated_duration
             }, managedTransaction);
 
-            // Step 2: Update booking status (repository)
-            await bookingsRepo.updateStatus(
+            if (!workOrder || !workOrder.id) {
+                throw new Error('Failed to create work order - no ID returned');
+            }
+
+            // Step 2: Update booking with work_order_id and status (repository)
+            await bookingsRepo.update(
                 booking_id,
-                'CONFIRMED',
+                {
+                    status: 'CONFIRMED',
+                    work_order_id: workOrder.id
+                },
                 managedTransaction
             );
 
@@ -145,6 +175,109 @@ class WorkOrderOrchestrator {
             }
 
             return workOrder;
+        } catch (error) {
+            if (shouldManageTransaction && managedTransaction) {
+                await managedTransaction.rollback();
+            }
+            throw error;
+        }
+    }
+
+    /**
+     * Update work order with items
+     * Workflow: Validate → Delete old items → Create new items → Update WO → Update stock
+     */
+    async updateWorkOrderWithItems({
+        work_order_id,
+        vehicle_id,
+        technician_id,
+        status,
+        items = [],
+        user_id,
+        start_time = null,
+        end_time = null,
+        estimated_duration = 90
+    }, transaction = null) {
+        const shouldManageTransaction = !transaction;
+        let managedTransaction = transaction;
+
+        try {
+            if (shouldManageTransaction) {
+                const { sequelize } = require('../models');
+                managedTransaction = await sequelize.transaction();
+            }
+
+            // Step 1: Get current work order (repository)
+            const workOrder = await workOrdersRepo.findById(work_order_id, managedTransaction);
+            if (!workOrder) {
+                throw new Error('Work order not found');
+            }
+
+            // Step 2: Delete all existing items (repository)
+            await workOrdersRepo.deleteAllItems(work_order_id, managedTransaction);
+
+            // Step 3: Validate new items (service)
+            if (items.length > 0) {
+                workOrderService.validateItems(items);
+            }
+
+            // Step 4: Calculate new total amount (service)
+            const total_amount = workOrderService.calculateTotalAmount(items);
+
+            // Step 5: Update work order basic info (repository)
+            await workOrdersRepo.update(work_order_id, {
+                vehicle_id,
+                technician_id: technician_id || null,
+                status,
+                total_amount,
+                start_time,
+                end_time,
+                estimated_duration
+            }, managedTransaction);
+
+            // Step 6: Create new work order items and update stock (loop workflow)
+            for (const item of items) {
+                // Prepare item data (service)
+                const itemData = workOrderService.prepareItemData(item, work_order_id);
+
+                // Create item (repository)
+                await workOrdersRepo.createItem(itemData, managedTransaction);
+
+                // Decrease stock for parts (service check + validation + repository action)
+                if (workOrderService.shouldDecrementStock(item.item_type)) {
+                    // Validate stock availability (service)
+                    const stock = await stocksRepo.findByPartId(item.item_id, managedTransaction);
+                    await stockService.validateAvailability(stock, item.quantity || 1);
+
+                    // Decrement quantity (repository)
+                    await stocksRepo.decrementQuantity(
+                        item.item_id,
+                        item.quantity || 1,
+                        `Updated in Work Order #${work_order_id}`,
+                        user_id,
+                        managedTransaction
+                    );
+                }
+            }
+
+            // Step 7: Update technician availability if changed
+            if (workOrder.technician_id !== technician_id) {
+                // Free old technician
+                if (workOrder.technician_id) {
+                    await techniciansRepo.updateAvailability(workOrder.technician_id, true, managedTransaction);
+                }
+                // Mark new technician as busy if status is IN_PROGRESS
+                if (technician_id && status === 'IN_PROGRESS') {
+                    await techniciansRepo.updateAvailability(technician_id, false, managedTransaction);
+                }
+            }
+
+            if (shouldManageTransaction) {
+                await managedTransaction.commit();
+            }
+
+            // Return updated work order with associations
+            return await workOrdersRepo.findById(work_order_id);
         } catch (error) {
             if (shouldManageTransaction && managedTransaction) {
                 await managedTransaction.rollback();
@@ -293,7 +426,12 @@ class WorkOrderOrchestrator {
                 await workOrdersRepo.updateEndTime(work_order_id, end_time, managedTransaction);
             }
 
-            // Step 4: Free technician (repository)
+            // Step 4: Update booking status to COMPLETED if work order has booking (repository)
+            if (workOrder.booking_id) {
+                await bookingsRepo.updateStatus(workOrder.booking_id, 'COMPLETED', managedTransaction);
+            }
+
+            // Step 5: Free technician (repository)
             if (workOrder.technician_id) {
                 await techniciansRepo.updateAvailability(workOrder.technician_id, true, managedTransaction);
             }

@@ -95,6 +95,12 @@ const Input = styled.input`
     outline: none;
     border-color: #2563eb;
   }
+  
+  &:disabled {
+    background-color: #f5f5f5;
+    color: #666;
+    cursor: not-allowed;
+  }
 `;
 
 const Select = styled.select`
@@ -108,6 +114,13 @@ const Select = styled.select`
   &:focus {
     outline: none;
     border-color: #2563eb;
+  }
+  
+  &:disabled {
+    background-color: #f5f5f5;
+    color: #666;
+    cursor: not-allowed;
+  }
   }
 `;
 
@@ -124,6 +137,16 @@ const SectionTitle = styled.h3`
   margin: 24px 0 12px 0;
   padding-bottom: 8px;
   border-bottom: 2px solid #e9ecef;
+`;
+
+const InfoMessage = styled.div`
+  background-color: #e3f2fd;
+  border-left: 4px solid #2196f3;
+  padding: 12px 16px;
+  margin-bottom: 20px;
+  border-radius: 4px;
+  font-size: 14px;
+  color: #1565c0;
 `;
 
 const ItemRow = styled.div`
@@ -334,11 +357,56 @@ const WorkOrderForm = ({ workOrder, onClose, onSuccess }) => {
       setFormData({
         customer_id: workOrder.customer_id || '',
         vehicle_id: workOrder.vehicle_id || '',
-        advisor_id: workOrder.advisor_id || '',
-        status: workOrder.status || 'OPEN'
+        technician_id: workOrder.technician_id || '',
+        status: workOrder.status || 'OPEN',
+        start_time: workOrder.start_time || '',
+        end_time: workOrder.end_time || '',
+        estimated_duration: workOrder.estimated_duration || 90
       });
-      if (workOrder.services) setServices(workOrder.services);
-      if (workOrder.parts) setParts(workOrder.parts);
+      
+      // Load customer details if available
+      if (workOrder.customerDetails) {
+        setNewCustomer({
+          name: workOrder.customerDetails.name || '',
+          phone: workOrder.customerDetails.phone || '',
+          email: workOrder.customerDetails.email || '',
+          address: workOrder.customerDetails.address || ''
+        });
+      }
+      
+      // Load vehicle details if available
+      if (workOrder.vehicleDetails) {
+        setNewVehicle({
+          license_plate: workOrder.vehicleDetails.license_plate || '',
+          model: workOrder.vehicleDetails.model || '',
+          vin: workOrder.vehicleDetails.vin || '',
+          mileage: workOrder.vehicleDetails.mileage || '',
+          note: workOrder.vehicleDetails.note || ''
+        });
+      }
+      
+      // Transform items array into services and parts
+      if (workOrder.items && Array.isArray(workOrder.items)) {
+        const loadedServices = workOrder.items
+          .filter(item => item.item_type === 'SERVICE')
+          .map(item => ({
+            service_id: item.item_id,
+            price: parseFloat(item.unit_price || 0),
+            description: item.description || ''
+          }));
+        
+        const loadedParts = workOrder.items
+          .filter(item => item.item_type === 'PART')
+          .map(item => ({
+            part_id: item.item_id,
+            quantity: item.quantity || 1,
+            price: parseFloat(item.unit_price || 0),
+            description: item.description || ''
+          }));
+        
+        setServices(loadedServices);
+        setParts(loadedParts);
+      }
     }
   }, [workOrder]);
 
@@ -546,14 +614,14 @@ const WorkOrderForm = ({ workOrder, onClose, onSuccess }) => {
             item_type: 'SERVICE',
             item_id: s.service_id, 
             quantity: 1, // Services always have quantity 1
-            price: s.price, 
+            unit_price: s.price, 
             description: s.description || ''
           })),
           ...parts.map(p => ({ 
             item_type: 'PART',
             item_id: p.part_id, 
             quantity: p.quantity, 
-            price: p.price, 
+            unit_price: p.price, 
             description: p.description || ''
           }))
         ]
@@ -588,32 +656,37 @@ const WorkOrderForm = ({ workOrder, onClose, onSuccess }) => {
 
         <form onSubmit={handleSubmit}>
           <Body>
+            {workOrder && (
+              <InfoMessage>
+                 Customer and Vehicle information cannot be changed when editing a work order.
+              </InfoMessage>
+            )}
             {/* Customer Section */}
             <SectionTitle>Customer Information</SectionTitle>
-            <RadioGroup>
-              <RadioLabel>
-                <input
-                  type="radio"
-                  value="existing"
-                  checked={customerType === 'existing'}
-                  onChange={(e) => setCustomerType(e.target.value)}
-                  disabled={!!workOrder}
-                />
-                Existing Customer
-              </RadioLabel>
-              <RadioLabel>
-                <input
-                  type="radio"
-                  value="new"
-                  checked={customerType === 'new'}
-                  onChange={(e) => setCustomerType(e.target.value)}
-                  disabled={!!workOrder}
-                />
-                New Customer (Walk-in)
-              </RadioLabel>
-            </RadioGroup>
+            {!workOrder && (
+              <RadioGroup>
+                <RadioLabel>
+                  <input
+                    type="radio"
+                    value="existing"
+                    checked={customerType === 'existing'}
+                    onChange={(e) => setCustomerType(e.target.value)}
+                  />
+                  Existing Customer
+                </RadioLabel>
+                <RadioLabel>
+                  <input
+                    type="radio"
+                    value="new"
+                    checked={customerType === 'new'}
+                    onChange={(e) => setCustomerType(e.target.value)}
+                  />
+                  New Customer (Walk-in)
+                </RadioLabel>
+              </RadioGroup>
+            )}
 
-            {customerType === 'existing' ? (
+            {customerType === 'existing' && !workOrder ? (
               <FormGroup>
                 <Label>Select Customer *</Label>
                 <Select
@@ -635,6 +708,7 @@ const WorkOrderForm = ({ workOrder, onClose, onSuccess }) => {
                     value={newCustomer.name}
                     onChange={(e) => setNewCustomer({...newCustomer, name: e.target.value})}
                     placeholder="Enter customer name"
+                    disabled={!!workOrder}
                   />
                   {errors.name && <ErrorText>{errors.name}</ErrorText>}
                 </FormGroup>
@@ -644,6 +718,7 @@ const WorkOrderForm = ({ workOrder, onClose, onSuccess }) => {
                     value={newCustomer.phone}
                     onChange={(e) => setNewCustomer({...newCustomer, phone: e.target.value})}
                     placeholder="Enter phone number"
+                    disabled={!!workOrder}
                   />
                   {errors.phone && <ErrorText>{errors.phone}</ErrorText>}
                 </FormGroup>
@@ -654,6 +729,7 @@ const WorkOrderForm = ({ workOrder, onClose, onSuccess }) => {
                     value={newCustomer.email}
                     onChange={(e) => setNewCustomer({...newCustomer, email: e.target.value})}
                     placeholder="Enter email"
+                    disabled={!!workOrder}
                   />
                 </FormGroup>
                 <FormGroup>
@@ -662,6 +738,7 @@ const WorkOrderForm = ({ workOrder, onClose, onSuccess }) => {
                     value={newCustomer.address}
                     onChange={(e) => setNewCustomer({...newCustomer, address: e.target.value})}
                     placeholder="Enter address"
+                    disabled={!!workOrder}
                   />
                 </FormGroup>
               </Grid>
@@ -669,30 +746,31 @@ const WorkOrderForm = ({ workOrder, onClose, onSuccess }) => {
 
             {/* Vehicle Section */}
             <SectionTitle>Vehicle Information</SectionTitle>
-            <RadioGroup>
-              <RadioLabel>
-                <input
-                  type="radio"
-                  value="existing"
-                  checked={vehicleType === 'existing'}
-                  onChange={(e) => setVehicleType(e.target.value)}
-                  disabled={!!workOrder || (customerType === 'existing' && !formData.customer_id)}
-                />
-                Existing Vehicle
-              </RadioLabel>
-              <RadioLabel>
-                <input
-                  type="radio"
-                  value="new"
-                  checked={vehicleType === 'new'}
-                  onChange={(e) => setVehicleType(e.target.value)}
-                  disabled={!!workOrder}
-                />
-                New Vehicle
-              </RadioLabel>
-            </RadioGroup>
+            {!workOrder && (
+              <RadioGroup>
+                <RadioLabel>
+                  <input
+                    type="radio"
+                    value="existing"
+                    checked={vehicleType === 'existing'}
+                    onChange={(e) => setVehicleType(e.target.value)}
+                    disabled={customerType === 'existing' && !formData.customer_id}
+                  />
+                  Existing Vehicle
+                </RadioLabel>
+                <RadioLabel>
+                  <input
+                    type="radio"
+                    value="new"
+                    checked={vehicleType === 'new'}
+                    onChange={(e) => setVehicleType(e.target.value)}
+                  />
+                  New Vehicle
+                </RadioLabel>
+              </RadioGroup>
+            )}
 
-            {vehicleType === 'existing' ? (
+            {vehicleType === 'existing' && !workOrder ? (
               <FormGroup>
                 <Label>Select Vehicle *</Label>
                 <Select
@@ -715,6 +793,7 @@ const WorkOrderForm = ({ workOrder, onClose, onSuccess }) => {
                     value={newVehicle.license_plate}
                     onChange={(e) => setNewVehicle({...newVehicle, license_plate: e.target.value})}
                     placeholder="Enter license plate"
+                    disabled={!!workOrder}
                   />
                   {errors.license_plate && <ErrorText>{errors.license_plate}</ErrorText>}
                 </FormGroup>
@@ -724,6 +803,7 @@ const WorkOrderForm = ({ workOrder, onClose, onSuccess }) => {
                     value={newVehicle.model}
                     onChange={(e) => setNewVehicle({...newVehicle, model: e.target.value})}
                     placeholder="Enter vehicle model"
+                    disabled={!!workOrder}
                   />
                   {errors.model && <ErrorText>{errors.model}</ErrorText>}
                 </FormGroup>
@@ -733,6 +813,7 @@ const WorkOrderForm = ({ workOrder, onClose, onSuccess }) => {
                     value={newVehicle.vin}
                     onChange={(e) => setNewVehicle({...newVehicle, vin: e.target.value})}
                     placeholder="Enter VIN"
+                    disabled={!!workOrder}
                   />
                 </FormGroup>
                 <FormGroup>
@@ -742,6 +823,7 @@ const WorkOrderForm = ({ workOrder, onClose, onSuccess }) => {
                     value={newVehicle.mileage}
                     onChange={(e) => setNewVehicle({...newVehicle, mileage: e.target.value})}
                     placeholder="Enter mileage"
+                    disabled={!!workOrder}
                   />
                 </FormGroup>
                 <FormGroup>
@@ -750,6 +832,7 @@ const WorkOrderForm = ({ workOrder, onClose, onSuccess }) => {
                     value={newVehicle.note}
                     onChange={(e) => setNewVehicle({...newVehicle, note: e.target.value})}
                     placeholder="Enter note (optional)"
+                    disabled={!!workOrder}
                   />
                 </FormGroup>
               </Grid>

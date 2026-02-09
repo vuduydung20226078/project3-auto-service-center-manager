@@ -1,4 +1,5 @@
 const { stocksRepo } = require('../repositories');
+const stockOrchestrator = require('../orchestrators/stock.orchestrator');
 
 // Lấy tất cả stock
 exports.list = async (req, res) => {
@@ -14,34 +15,15 @@ exports.list = async (req, res) => {
 exports.addEntry = async (req, res) => {
     const { part_id, qty, type, ref_type, location, target_location } = req.body;
     try {
-        const entryData = {
+        const message = await stockOrchestrator.addStockEntry({
             part_id,
-            quantity_change: type === 'IN' ? qty : -qty,
-            entry_type: type,
+            qty,
+            type,
             ref_type,
             location,
             target_location,
-            notes: null,
-            performed_by: req.user.id
-        };
-
-        await stocksRepo.createEntry(entryData);
-
-        // Update stock quantity
-        if (type === 'IN') {
-            await stocksRepo.incrementQuantity(part_id, qty, `Stock entry: ${ref_type}`, req.user.id);
-        } else {
-            await stocksRepo.decrementQuantity(part_id, qty, `Stock entry: ${ref_type}`, req.user.id);
-        }
-
-        let message = 'Stock entry created successfully';
-        if (ref_type === 'ADJ') {
-            message = `Adjusted ${qty} items from ${location} to ${target_location}`;
-        } else if (type === 'IN') {
-            message = `Added ${qty} items to stock`;
-        } else {
-            message = `Removed ${qty} items from stock`;
-        }
+            user_id: req.user.id
+        });
 
         res.status(201).json({ success: true, message });
     } catch (error) {

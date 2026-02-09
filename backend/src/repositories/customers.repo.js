@@ -101,6 +101,14 @@ class CustomersRepository {
             return { customer, created: false };
         }
 
+        // If email provided, check if customer exists with same email
+        if (customerData.email) {
+            customer = await this.findByEmail(customerData.email);
+            if (customer) {
+                return { customer, created: false };
+            }
+        }
+
         // Create new customer
         customer = await this.create(customerData, transaction);
         return { customer, created: true };
