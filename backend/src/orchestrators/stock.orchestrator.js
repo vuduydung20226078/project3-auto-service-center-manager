@@ -51,18 +51,24 @@ class StockOrchestrator {
                     target_location
                 }, managedTransaction);
             } else if (type === 'IN') {
-                // Incoming stock
+                // Incoming stock - require explicit location
+                if (!location) {
+                    throw new Error('Location is required for incoming stock');
+                }
                 await this.handleIncomingStock({
                     part_id,
                     qty,
-                    location: location || 'Default'
+                    location
                 }, managedTransaction);
             } else if (type === 'OUT') {
-                // Outgoing stock
+                // Outgoing stock - require explicit location
+                if (!location) {
+                    throw new Error('Location is required for outgoing stock');
+                }
                 await this.handleOutgoingStock({
                     part_id,
                     qty,
-                    location: location || 'Default'
+                    location
                 }, managedTransaction);
             }
 

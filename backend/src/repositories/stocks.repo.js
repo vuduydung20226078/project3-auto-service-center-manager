@@ -7,17 +7,22 @@ const { Op } = require('sequelize');
 
 class StocksRepository {
     /**
-     * Find stock by part ID
+     * Find stock by part ID (first available location with qty > 0)
      */
-    async findByPartId(partId) {
+    async findByPartId(partId, transaction = null) {
         return await Stock.findOne({
-            where: { part_id: partId },
+            where: {
+                part_id: partId,
+                qty: { [require('sequelize').Op.gt]: 0 }
+            },
+            order: [['qty', 'DESC']], // Get location with most quantity first
             include: [
                 {
                     model: Part,
                     attributes: ['id', 'name', 'unit_price', 'sku', 'unit']
                 }
-            ]
+            ],
+            transaction
         });
     }
 

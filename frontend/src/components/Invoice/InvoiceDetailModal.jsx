@@ -338,7 +338,7 @@ const InvoiceDetailModal = ({ invoice, onClose, onUpdate }) => {
               </InfoItem>
               <InfoItem>
                 <InfoLabel>Created Date</InfoLabel>
-                <InfoValue>{formatDate(invoice.created_at)}</InfoValue>
+                <InfoValue>{formatDate(invoice.createdAt)}</InfoValue>
               </InfoItem>
             </InfoGrid>
           </Section>

@@ -58,15 +58,15 @@ class PaymentOrchestrator {
         if (!payment) {
             const paymentData = paymentService.prepareVnPayPaymentData(params, invoice);
             payment = await paymentsRepo.createPayment(paymentData, transaction);
-            console.log('✅ Payment created:', payment.id);
+            console.log('Payment created:', payment.id);
         } else {
-            console.log('⚠️ Payment already exists (idempotent):', payment.id);
+            console.log('Payment already exists (idempotent):', payment.id);
         }
 
         // Step 5: Update invoice status if payment successful (repository)
         if (invoice && vnp_ResponseCode === '00') {
             await paymentsRepo.updateInvoiceStatus(invoice.id, 'PAID', transaction);
-            console.log('✅ Invoice marked as PAID:', invoice.id);
+            console.log('Invoice marked as PAID:', invoice.id);
         }
 
         return { payment, invoice };

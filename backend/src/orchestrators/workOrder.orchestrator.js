@@ -72,18 +72,18 @@ class WorkOrderOrchestrator {
 
                 // Decrease stock for parts (service check + validation + repository action)
                 if (workOrderService.shouldDecrementStock(item.item_type)) {
-                    // Validate stock availability (service) - use Default location for work orders
-                    const stock = await stocksRepo.findByPartAndLocation(item.item_id, 'Default');
+                    // Validate stock availability (service) - find first available location
+                    const stock = await stocksRepo.findByPartId(item.item_id, managedTransaction);
                     await stockService.validateAvailability(stock, item.quantity || 1);
 
-                    // Decrement quantity (repository) - from Default location
+                    // Decrement quantity (repository) - from the found location
                     await stocksRepo.decrementQuantity(
                         item.item_id,
                         item.quantity || 1,
                         `Used in Work Order #${workOrder.id}`,
                         user_id,
                         managedTransaction,
-                        'Default'
+                        stock.location
                     );
                 }
             }
