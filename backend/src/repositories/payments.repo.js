@@ -2,7 +2,7 @@
  * Payments and Invoices Repository
  * Isolates Sequelize queries from service layer
  */
-const { Payment, Invoice, WorkOrder } = require('../models');
+const { Payment, Invoice, WorkOrder, Vehicle } = require('../models');
 
 class PaymentsRepository {
     // ========== Payments ==========
@@ -167,8 +167,15 @@ class PaymentsRepository {
             include: [
                 {
                     model: WorkOrder,
-                    attributes: ['id', 'status', 'vehicle_id']
+                    attributes: ['id', 'status', 'vehicle_id'],
+                    include: [
+                        {
+                            model: Vehicle,
+                            attributes: ['id', 'license_plate']
+                        }
+                    ],
                 }
+                
             ],
             order: [['created_at', 'DESC']]
         });

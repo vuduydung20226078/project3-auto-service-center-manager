@@ -59,7 +59,7 @@ exports.create = async (req, res) => {
 exports.createCustomerBooking = async (req, res) => {
     try {
         const { customerData, vehicleData, scheduled_at, notes } = req.body;
-
+        console.log(customerData, vehicleData, scheduled_at, notes);
         const result = await bookingOrchestrator.createCustomerBooking({
             customerData,
             vehicleData,

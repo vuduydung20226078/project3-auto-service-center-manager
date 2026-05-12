@@ -65,7 +65,7 @@ class PaymentOrchestrator {
 
         // Step 5: Update invoice status if payment successful (repository)
         if (invoice && vnp_ResponseCode === '00') {
-            await paymentsRepo.updateInvoiceStatus(invoice.id, 'PAID', transaction);
+            invoice = await paymentsRepo.updateInvoiceStatus(invoice.id, 'PAID', transaction);
             console.log('Invoice marked as PAID:', invoice.id);
         }
 
@@ -92,7 +92,10 @@ class PaymentOrchestrator {
         // Step 5: Update invoice status (repository)
         await paymentsRepo.updateInvoiceStatus(invoice_id, 'PAID', transaction);
 
-        return { payment, invoice };
+        // Refresh invoice to get updated status
+        const updatedInvoice = await paymentsRepo.findInvoiceById(invoice_id);
+
+        return { payment, invoice: updatedInvoice };
     }
 
     /**

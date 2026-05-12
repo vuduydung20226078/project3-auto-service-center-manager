@@ -24,7 +24,7 @@ class BookingOrchestrator {
                 preparedCustomerData,
                 transaction
             );
-
+                
             // Step 3: Prepare vehicle data (service)
             const preparedVehicleData = bookingService.prepareVehicleData(vehicleData, customer.id);
 

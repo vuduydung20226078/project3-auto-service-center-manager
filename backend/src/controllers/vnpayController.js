@@ -20,15 +20,15 @@ exports.handleVnpayIPN = async (req, res) => {
 };
 
 // Handler for VNPay return (user redirected back from VNPAY)
-// NO DB update - only verify and redirect to frontend
+// Process payment and update DB before redirecting to ensure invoice status is updated
 exports.handleVnpayReturn = async (req, res) => {
     try {
         const params = req.query || {};
         console.log('VNPAY return GET received (user redirect):', params.vnp_TxnRef);
 
-        // Only verify, DO NOT update DB
-        const verified = paymentOrchestrator.verifyVnPayReturn(params);
-        console.log('Verification result:', verified.isSuccess ? 'SUCCESS' : 'FAILED');
+        // Process payment and update DB (idempotent - safe to call even if IPN already processed)
+        const result = await paymentOrchestrator.processVnPayReturn(params);
+        console.log('Payment processed, invoice status:', result.invoice ? result.invoice.status : 'N/A');
 
         // Redirect to frontend with all params
         const frontendUrl = process.env.VNPAY_RETURN_URL || 'http://localhost:5173/payment/result';
@@ -42,7 +42,7 @@ exports.handleVnpayReturn = async (req, res) => {
         console.log('Redirecting to frontend:', redirectUrl.pathname);
         return res.redirect(redirectUrl.toString());
     } catch (error) {
-        console.error('Error verifying VNPAY return:', error);
+        console.error('Error processing VNPAY return:', error);
         // Still redirect to frontend even on error, let frontend show error UI
         const frontendUrl = process.env.VNPAY_RETURN_URL || 'http://localhost:5173/payment/result';
         return res.redirect(`${frontendUrl}?error=true&message=${encodeURIComponent(error.message)}`);

@@ -469,7 +469,7 @@ const InvoiceManagement = () => {
                         {invoice.status.replace('_', ' ')}
                       </StatusBadge>
                     </Td>
-                    <Td>{formatDate(invoice.created_at)}</Td>
+                    <Td>{formatDate(invoice.createdAt)}</Td>
                     <Td>
                       <Actions>
                         <ActionButton variant="view" onClick={() => handleViewInvoice(invoice)}>
